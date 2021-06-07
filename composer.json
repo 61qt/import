@@ -1,0 +1,27 @@
+{
+    "name": "mqt/import",
+    "description": "laravel normal import",
+    "type": "library",
+    "authors": [
+        {
+            "name": "zyz",
+            "email": "348977791@qq.com"
+        }
+    ],
+    "require": {
+        "php": "^8.0.0",
+        "box/spout": "^3.0",
+        "illuminate/validation": "^8.0",
+        "illuminate/support": "^8.0",
+        "illuminate/database": "^8.0",
+        "phpoffice/phpspreadsheet": "^1.11"
+    },
+    "autoload": {
+        "psr-4": {
+            "QT\\Import\\": "src"
+        },
+        "files": [
+            "./src/Foundation/helpers.php"
+        ]
+    }
+}
