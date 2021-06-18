@@ -3,6 +3,7 @@
 namespace QT\Import\Rules;
 
 use Illuminate\Database\Query\Expression;
+use Illuminate\Support\Arr;
 
 /**
  * 检查导入数据与数据库中已存在的数据是否一致或者为空
@@ -84,7 +85,7 @@ class EmptyOrEqual extends Equal
                     continue;
                 }
                 // 数据库字段为空不对比字段一致
-                if (empty(array_get($models->get($key), $field))) {
+                if (empty(Arr::get($models->get($key), $field))) {
                     continue;
                 }
 
@@ -93,7 +94,7 @@ class EmptyOrEqual extends Equal
                     continue;
                 }
 
-                if (array_get($models->get($key), $field) == $row[$alias]) {
+                if (Arr::get($models->get($key), $field) == $row[$alias]) {
                     continue;
                 }
 

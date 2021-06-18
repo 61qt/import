@@ -2,8 +2,8 @@
 
 namespace QT\Import\Traits;
 
+use RuntimeException;
 use Illuminate\Support\Arr;
-use QT\Import\Exceptions\Error;
 use Illuminate\Database\Query\Expression;
 
 /**
@@ -85,7 +85,12 @@ trait CheckTableDuplicated
                 return $attributes[$field] ?? $field;
             }, $fields));
 
-            throw new Error(sprintf("%s 错误: 原表第%s行 与 第%s行 重复,请确保数据表内的数据为唯一的", $errField, $line, $conflictLine));
+            throw new RuntimeException(sprintf(
+                "%s 错误: 原表第%s行 与 第%s行 重复,请确保数据表内的数据为唯一的",
+                $errField,
+                $line,
+                $conflictLine
+            ));
         }
     }
 

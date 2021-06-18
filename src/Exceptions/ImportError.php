@@ -2,21 +2,21 @@
 
 namespace QT\Import\Exceptions;
 
+use Throwable;
+use RuntimeException;
+use Illuminate\Support\Arr;
 use Illuminate\Database\Query\Expression;
 
-class ImportError extends \RuntimeException
+class ImportError extends RuntimeException
 {
     protected $row;
 
-    protected $errorLine;
+    protected $line;
 
-    public function __construct(
-        $row,
-        $errorLine,
-        \Throwable $previous
-    ) {
-        $this->row       = $row;
-        $this->errorLine = $errorLine;
+    public function __construct(array $row, int $line, Throwable $previous)
+    {
+        $this->row  = $row;
+        $this->line = $line;
         // 使用将原版错误进行包装
         parent::__construct($previous->getMessage(), 0, $previous);
     }
@@ -29,7 +29,7 @@ class ImportError extends \RuntimeException
 
         $result = [];
         foreach ($keys as $key) {
-            $value = array_get($this->row, $key);
+            $value = Arr::get($this->row, $key);
             // 将表达式变为空
             $result[] = is_object($value) && $value instanceof Expression
                 ? null
@@ -41,6 +41,6 @@ class ImportError extends \RuntimeException
 
     public function getErrorLine()
     {
-        return $this->errorLine;
+        return $this->line;
     }
 }

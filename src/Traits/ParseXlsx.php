@@ -2,11 +2,13 @@
 
 namespace QT\Import\Traits;
 
+use RuntimeException;
 use Box\Spout\Common\Type;
+use Illuminate\Support\Arr;
 use QT\Import\Exceptions\Error;
 use Box\Spout\Reader\SheetInterface;
 use Box\Spout\Reader\ReaderInterface;
-use Box\Spout\Reader\Common\Creator\ReaderEntityFactory;
+use Box\Spout\Reader\Common\Creator\ReaderFactory;
 
 trait ParseXlsx
 {
@@ -58,7 +60,7 @@ trait ParseXlsx
      */
     protected function parseXlsx($filename, $columns, $type = Type::XLSX)
     {
-        $reader = ReaderEntityFactory::createXLSXReader();
+        $reader = ReaderFactory::createFromType($type);
         $reader->open($filename);
 
         // 不跳过空行,不然会造成行号错误的情况
@@ -78,7 +80,7 @@ trait ParseXlsx
 
             // 行号从1开始计算,所以最大导入行数需要加1
             if ($line > $this->maxRowQuantity + 1) {
-                throw new Error($this->getMaxRowQuantityError());
+                throw new RuntimeException($this->getMaxRowQuantityError());
             }
 
             // 组装row,保证row的内容与导入模板设置的字段匹配
@@ -125,7 +127,7 @@ trait ParseXlsx
             }
         }
 
-        throw new Error("Sheet{$sheetIndex} 不存在");
+        throw new RuntimeException("Sheet{$sheetIndex} 不存在");
     }
 
     /**
@@ -143,11 +145,11 @@ trait ParseXlsx
             $value = $row->getValue();
             // 剔除括号内的内容
             if (false !== strpos($value, '(')) {
-                $value = array_first(explode('(', $value));
+                $value = Arr::first(explode('(', $value));
             }
 
             if (empty($columns[$value])) {
-                throw new Error('导入模板与系统提供的模板不一致，请重新导入');
+                throw new RuntimeException('导入模板与系统提供的模板不一致，请重新导入');
             }
 
             $results[] = $columns[$value];

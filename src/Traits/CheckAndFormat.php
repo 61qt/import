@@ -3,7 +3,6 @@
 namespace QT\Import\Traits;
 
 use RuntimeException;
-use QT\Import\Exceptions\Error;
 use Illuminate\Support\Facades\DB;
 use QT\Import\Contracts\Dictionary;
 use Illuminate\Support\Facades\Validator;
@@ -66,7 +65,7 @@ trait CheckAndFormat
                 $errMsg[] = sprintf('原表%s: %s', $pos, join(',', $msgs));
             }
 
-            throw new Error(join("\n", $errMsg));
+            throw new RuntimeException(join("\n", $errMsg));
         }
 
         return [$data, $line, $fields];
@@ -117,7 +116,7 @@ trait CheckAndFormat
         }
 
         if (!empty($errors)) {
-            throw new Error(join(',', $errors));
+            throw new RuntimeException(join(',', $errors));
         }
 
         return [$data, $line, $fields];

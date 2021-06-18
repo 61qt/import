@@ -3,6 +3,7 @@
 namespace QT\Import\Rules;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
 
 abstract class ValidateModels implements Validatable
 {
@@ -95,7 +96,7 @@ abstract class ValidateModels implements Validatable
             }
 
             if (is_int($key)) {
-                $key = array_first($fields);
+                $key = Arr::first($fields);
             }
 
             // 获取字段别名与model中实际字段名 [excel表内名 => model实际字段名]
