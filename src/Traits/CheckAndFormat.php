@@ -3,11 +3,11 @@
 namespace QT\Import\Traits;
 
 use RuntimeException;
+use Illuminate\Container\Container;
 use QT\Import\Contracts\Dictionary;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Contracts\Validation\Factory;
 use Box\Spout\Writer\Common\Helper\CellHelper;
-use Illuminate\Container\Container;
 
 trait CheckAndFormat
 {
