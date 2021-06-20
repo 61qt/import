@@ -2,8 +2,8 @@
 
 namespace QT\Import\Rules;
 
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
+use Illuminate\Database\Eloquent\Builder;
 
 abstract class ValidateModels implements Validatable
 {
