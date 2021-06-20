@@ -4,20 +4,46 @@ namespace QT\Import\Contracts;
 
 /**
  * 字典接口
+ * 
+ * key为excel里填写的值
+ * value是插入到数据库的值
  */
 interface Dictionary
 {
     /**
-     *  获取所有字典信息
-     *
-     * @return array
+     * 检查key是否有对应的值
+     * 
+     * @param string|int $key
+     * @return bool
      */
-    public function getDictionaries(): array;
+    public function has(string|int $key): bool;
 
     /**
-     *  获取下拉对应字典信息
-     *
+     * 获取key对应的值
+     * 
+     * @param string|int $key
+     * @return string|int|null
+     */
+    public function get(string|int $key): string|int|null;
+
+    /**
+     * 获取所有的字典内容
+     * 
      * @return array
      */
-    public function getOptionalDictionaries(): array;
+    public function all(): array;
+
+    /**
+     * 获取所有字典的key
+     * 
+     * @return array
+     */
+    public function keys(): array;
+
+    /**
+     * 获取所有字典的values
+     * 
+     * @return array
+     */
+    public function values(): array;
 }

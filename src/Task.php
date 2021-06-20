@@ -1,19 +1,23 @@
 <?php
 
-namespace QT\Import\Foundation;
+namespace QT\Import;
 
 use RuntimeException;
-use QT\Import\Contracts\Task;
-use QT\Import\Exceptions\Error;
+use QT\Import\Traits\Events;
 use QT\Import\Traits\ParseXlsx;
-use Illuminate\Support\Facades\DB;
 use QT\Import\Traits\RowsValidator;
 use QT\Import\Traits\CheckAndFormat;
 use QT\Import\Exceptions\ImportError;
 use QT\Import\Traits\CheckTableDuplicated;
 
-class ImportHander
+/**
+ * Import Task
+ *
+ * @package QT\Import
+ */
+abstract class Task
 {
+    use Events;
     use ParseXlsx;
     use RowsValidator;
     use CheckAndFormat;
@@ -55,58 +59,75 @@ class ImportHander
     protected $errors = [];
 
     /**
-     * 构造函数不允许传参，保证从服务容器中生成时不会出错
+     * 上次同步生成进度时间
+     *
+     * @var int
      */
-    public function __construct()
-    {
-        $this->bootCheckTableDuplicated();
-    }
+    protected $reportAt;
+
+    /**
+     * 上报间隔时间
+     *
+     * @var int
+     */
+    protected $interval = 3;
 
     /**
      * 开始处理异步导入任务
      *
-     * @param Task $task
      * @param string $filename
+     * @param array $options
      */
-    public function handle(Task $task, string $filename)
+    public function handle(string $filename, array $options = [])
     {
+        $this->bootDictErrorMessages();
+        $this->bootCheckTableDuplicated();
+
         ini_set('memory_limit', $this->memoryLimit);
 
+        $this->options = $options;
+
         try {
-            // 支持在任务开始前对input与task内容进行检查处理
-            // $this->beforeImport($task);
+            // 支持在任务开始前对option内容进行检查处理
+            if (method_exists($this, 'beforeImport')) {
+                $this->beforeImport($options);
+            }
             // 处理excel文件
             $this->processFile($filename);
             // 从excel中提取的数据进行批量处理
             $this->checkAndFormatRows();
-
-            DB::transaction(function () {
-                $this->insertDB();
-            });
+            // 插入到db
+            $this->insertDB();
 
             // 错误行上报
             if (!empty($this->errors)) {
-                $task->reportErrors($this->errors);
+                $this->fireEvent('warning', $this->errors);
             }
 
             // 记录成功导入数量
-            $task->complete(count($this->rows));
-        } catch (\Throwable$e) {
-            // 记录错误信息
-            $task->failed($e);
+            $this->fireEvent('complete', count($this->rows));
+        } catch (\Throwable $e) {
+            // 防止没有监听事件时无法获取错误信息
+            if (empty($this->getEventDispatcher())) {
+                throw $e;
+            }
+
+            $this->fireEvent('failed', $e);
         }
     }
 
     /**
      * 处理上传文件
      *
-     * @param $file
+     * @param string $filename
      */
-    protected function processFile($file)
+    protected function processFile(string $filename)
     {
-        foreach ($this->parseXlsx($file, $this->fields) as [$row, $line, $fields]) {
+        $this->reportAt = time();
+
+        foreach ($this->praseFile($filename) as [$row, $line]) {
             try {
-                $row = $this->checkAndFormatRow($row, $line, $fields);
+                $row = $this->checkAndFormatRow($row, $line);
 
                 if (empty($row)) {
                     continue;
@@ -119,6 +140,13 @@ class ImportHander
                 // 错误行不保留原始数据
                 unset($this->originalRows[$line]);
             }
+
+            // 每隔一段时间上报当前进度
+            if (time() > $this->reportAt + $this->interval) {
+                $this->reportAt = time();
+
+                $this->fireEvent('progress', $line);
+            }
         }
     }
 
@@ -127,14 +155,26 @@ class ImportHander
      *
      * @param array $data
      * @param int $line
-     * @param array $fields
      * @return mixed
-     * @throws Error
+     * @throws RuntimeException
      */
-    protected function checkAndFormatRow($data, $line, $fields)
+    protected function checkAndFormatRow(array $data, int $line)
     {
-        list($result, $line, $fields) = $this->formatRow(
-            ...$this->checkRow($data, $line, $fields)
+        $errors = [];
+        foreach ($this->dictionaries as $field => $dict) {
+            $value = $this->formatDict($data[$field], $dict);
+    
+            if ($value !== false) {
+                $data[$field] = $value;
+            } else {
+                $errors[$field] = $this->dictErrorMessages[$field];
+            }
+        }
+
+        $this->throwNotEmpty($errors, $line);
+
+        [$result, $line] = $this->formatRow(
+            ...$this->checkRow($data, $line)
         );
 
         // 进行唯一性检查,保证唯一索引字段在excel内不会有重复
@@ -145,8 +185,6 @@ class ImportHander
 
     /**
      * 批量处理行信息
-     *
-     * @param array @rows
      */
     protected function checkAndFormatRows()
     {
@@ -172,6 +210,6 @@ class ImportHander
      */
     protected function insertDB()
     {
-        // Insert or update
+        
     }
 }

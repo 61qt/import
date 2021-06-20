@@ -51,14 +51,13 @@ trait ParseXlsx
      * 解析Xlsx文件
      *
      * @param string $filename
-     * @param array  $columns
      * @param string $type
      * @return \Generator;
      * @throws \Box\Spout\Common\Exception\IOException
      * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
      * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
      */
-    protected function parseXlsx($filename, $columns, $type = Type::XLSX)
+    protected function praseFile($filename, $type = Type::XLSX)
     {
         $reader = ReaderFactory::createFromType($type);
         $reader->open($filename);
@@ -74,7 +73,7 @@ trait ParseXlsx
             $row = $row->getCells();
             if ($line++ === 0) {
                 // 处理列名顺序
-                $fields = $this->getFields($row, array_flip($columns));
+                $fields = $this->getFields($row);
                 continue;
             }
 
@@ -106,7 +105,7 @@ trait ParseXlsx
             // 冗余原始行数据
             $this->originalRows[$line] = $result;
 
-            yield [$result, $line, $fields];
+            yield [$result, $line];
         }
     }
 
@@ -134,13 +133,13 @@ trait ParseXlsx
      * 根据首行数据匹配列名
      *
      * @param array $firstRow
-     * @param array $columns
      * @return array
      * @throws Error
      */
-    protected function getFields($firstRow, $columns)
+    protected function getFields($firstRow)
     {
         $results = [];
+        $columns = array_flip($this->fields);
         foreach ($firstRow as $row) {
             $value = $row->getValue();
             // 剔除括号内的内容
