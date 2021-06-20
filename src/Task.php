@@ -38,6 +38,13 @@ abstract class Task
     protected $fields = [];
 
     /**
+     * 字段备注信息
+     *
+     * @var array
+     */
+    protected $remarks = [];
+
+    /**
      * 内存占用大小
      *
      * @var string
@@ -71,6 +78,22 @@ abstract class Task
      * @var int
      */
     protected $interval = 3;
+
+    /**
+     * 获取导入模板
+     * 
+     * @param array $input
+     * @return Template
+     */
+    public function getImportTemplate(array $input = []): Template
+    {
+        return new Template(
+            $this->fields,
+            $this->rules,
+            $this->remarks,
+            $this->dictionaries
+        );
+    }
 
     /**
      * 开始处理异步导入任务

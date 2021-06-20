@@ -1,8 +1,9 @@
 <?php
 
-namespace QT\Import\Foundation;
+namespace QT\Import;
 
 use RuntimeException;
+use QT\Import\Contracts\Dictionary;
 use Illuminate\Database\Query\Builder;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
@@ -13,31 +14,57 @@ use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use Illuminate\Validation\ValidationRuleParser;
 use PhpOffice\PhpSpreadsheet\RichText\RichText;
+use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Illuminate\Validation\Concerns\ReplacesAttributes;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
 /**
- * 导入模板
+ * Import Template
  *
- * Class ImportTemplate
- * @package App\Tasks\Import\Templates
+ * @package QT\Import
  */
-class ImportTemplate
+class Template
 {
     use ReplacesAttributes;
 
     protected $spreadsheet;
 
-    protected $columns;
-
-    protected $rules;
-
-    protected $remarks = [];
-
-    protected $extraDictFields = [];
-
     protected $columnsSheetIndex;
 
+    /**
+     * 列名
+     *
+     * @var array
+     */
+    protected $columns;
+
+    /**
+     * 每一列的校验规则
+     *
+     * @var array
+     */
+    protected $rules;
+
+    /**
+     * 列备注信息
+     *
+     * @var array
+     */
+    protected $remarks = [];
+
+    /**
+     * 列对应的字典
+     *
+     * @var array
+     */
+    protected $dictionaries = [];
+
+    /**
+     * 校验提示语
+     *
+     * @var array
+     */
     protected $ruleMaps = [
         'Required'   => '必填',
         'Integer'    => '数字',
@@ -65,20 +92,20 @@ class ImportTemplate
     public function __construct(
         array $columns,
         array $rules,
-        array $remarks = [],
-        array $extraDictFields = []
+        array $remarks = []
     ) {
-        $this->spreadsheet     = new Spreadsheet;
-        $this->columns         = $columns;
-        $this->rules           = $rules;
-        $this->remarks         = $remarks;
-        $this->extraDictFields = $extraDictFields;
+        $this->spreadsheet = new Spreadsheet;
+        $this->columns     = $columns;
+        $this->rules       = $rules;
+        $this->remarks     = $remarks;
     }
 
     /**
-     * 生成模板首行信息
+     * 生成导入列
+     *
+     * @param int $sheetIndex
      */
-    public function generateColumns($sheetIndex = 0)
+    public function generateColumns(int $sheetIndex = 0)
     {
         if ($sheetIndex === 0) {
             $sheet = $this->spreadsheet->getSheet($sheetIndex);
@@ -95,7 +122,12 @@ class ImportTemplate
         return $this;
     }
 
-    protected function generateFirstColumn($sheet)
+    /**
+     * 生成首行信息
+     *
+     * @param Worksheet $sheet
+     */
+    protected function generateFirstColumn(Worksheet $sheet)
     {
         $currentColumn = 0;
         foreach ($this->columns as $column => $displayName) {
@@ -119,6 +151,7 @@ class ImportTemplate
                 $sheet->getComment("{$coordinate}1")->setText($text);
             }
 
+            // TODO 允许根据校验规则设置样式 {required: styles}
             if (array_key_exists('Required', $rules)) {
                 // 必填参数背景设置为红色,字体颜色设置为白色,边框颜色设置为黑色
                 $sheet->getStyle("{$coordinate}1")->applyFromArray([
@@ -209,9 +242,9 @@ class ImportTemplate
      */
     public function fillSimpleData(
         $source,
-        $sheetIndex = 0,
-        $startColumn = 0,
-        $startRow = 2
+        int $sheetIndex = 0,
+        int $startColumn = 0,
+        int $startRow = 2
     ) {
         if ($source instanceof Builder || $source instanceof EloquentBuilder) {
             $source = $source->cursor();
@@ -227,11 +260,115 @@ class ImportTemplate
     }
 
     /**
+     * 设置允许使用下拉选项的列
+     *
+     * @param array<string, Dictionary> $dictionaries
+     */
+    public function setOptionalColumns(array $dictionaries)
+    {
+        if (null === $this->columnsSheetIndex) {
+            throw new RuntimeException('只有在导入表头加载完成后才允许生成字典');
+        }
+
+        // 保证字典与导入sheet同步
+        $sheet = $this->spreadsheet->getSheet($this->columnsSheetIndex);
+
+        $columns = array_keys($this->columns);
+        foreach ($dictionaries as $column => $dictionary) {
+            $columnIndex = array_search($column, $columns);
+
+            if ($columnIndex === false) {
+                continue;
+            }
+
+            // todo 根据是否必填检查是否允许为空
+            $validation = (new DataValidation)
+                ->setType(DataValidation::TYPE_LIST)
+                ->setErrorStyle(DataValidation::STYLE_INFORMATION)
+                ->setAllowBlank(false)
+                ->setShowInputMessage(true)
+                ->setShowErrorMessage(true)
+                ->setShowDropDown(true)
+                ->setErrorTitle('输入错误')
+                ->setError("必须在可选的范围内")
+                ->setFormula1('"' . join(',', $dictionary->keys()) . '"');
+
+            $column = Coordinate::stringFromColumnIndex($columnIndex + 1);
+            // 给1~200000行设置下拉选项
+            $sheet->setDataValidation("{$column}2:{$column}200000", $validation);
+        }
+    }
+
+    /**
+     * 在excel第二个sheet中生成字典
+     *
+     * @param array<string, Dictionary> $dictionaries
+     */
+    public function generateDictSheet($dictionaries)
+    {
+        if (null === $this->columnsSheetIndex) {
+            throw new RuntimeException('只有在导入表头加载完成后才允许生成字典');
+        }
+
+        $maxLine = 0;
+        $columns = [];
+        // 检查那些导入列需要设置字典
+        foreach (array_keys($this->columns) as $column) {
+            if (empty($dictionaries[$column])) {
+                continue;
+            }
+
+            $line = 0;
+            $dict = [];
+            foreach ($dictionaries[$column]->all() as $key => $value) {
+                $dict[$line++] = [$key, $value];
+            }
+
+            $maxLine = max($maxLine, $line);
+
+            $columns[$column] = $dict;
+        }
+
+        if (empty($columns)) {
+            return;
+        }
+
+        // 获取导入用的sheet后一个sheet
+        $sheet = $this->spreadsheet->createSheet(
+            $this->spreadsheet->getActiveSheetIndex() + 1
+        );
+
+        // 生成首行信息
+        $first = [];
+        foreach (array_keys($columns) as $column) {
+            $first[] = "{$this->columns[$column]}字典";
+            $first[] = "字典含义";
+        }
+
+        $rows = [$first];
+        for ($line = 0; $line < $maxLine; $line++) {
+            $row = [];
+            foreach ($columns as $column => $dict) {
+                if (!empty($dict[$line])) {
+                    array_push($row, ...$dict[$line]);
+                } else {
+                    array_push($row, null, null);
+                }
+            }
+
+            $rows[] = $row;
+        }
+
+        $sheet->setTitle('导入字典');
+        $this->addStrictStringRows($sheet, $rows);
+    }
+
+    /**
      * 将文件保存到指定位置
      *
-     * @filename
+     * @param string $filename
      */
-    public function save($filename)
+    public function save(string $filename)
     {
         $this->spreadsheet->setActiveSheetIndex($this->columnsSheetIndex);
 
@@ -243,8 +380,8 @@ class ImportTemplate
     /**
      * 填入基础数据
      *
-     * @param Builder|iterable $source
-     * @param int $sheetIndex
+     * @param Worksheet $sheet
+     * @param \Iterable $source
      * @param int $startColumn
      * @param int $startRow
      */
@@ -254,7 +391,7 @@ class ImportTemplate
             $currentColumn = $startColumn;
             foreach ($row as $value) {
                 $sheet->getCellByColumnAndRow(++$currentColumn, $startRow)
-                      ->setValueExplicit($value, DataType::TYPE_STRING);
+                    ->setValueExplicit($value, DataType::TYPE_STRING);
             }
             ++$startRow;
         }
