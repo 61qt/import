@@ -7,6 +7,7 @@ use QT\Import\Contracts\Dictionary;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Contracts\Validation\Factory;
 use Box\Spout\Writer\Common\Helper\CellHelper;
+use Illuminate\Container\Container;
 
 trait CheckAndFormat
 {
@@ -260,7 +261,7 @@ trait CheckAndFormat
      */
     protected function getValidationFactory(): Factory
     {
-        return $this->factory;
+        return $this->factory ?: Container::getInstance()->make(Factory::class);
     }
 
     /**
