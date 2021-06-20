@@ -4,6 +4,10 @@
     "type": "library",
     "authors": [
         {
+            "name": "rayson",
+            "email": "xurhwork@gmail.com"
+        },
+        {
             "name": "zyz",
             "email": "348977791@qq.com"
         }
@@ -18,10 +22,10 @@
     },
     "autoload": {
         "psr-4": {
-            "QT\\Import\\": "src"
+            "QT\\Import\\": "src/"
         },
         "files": [
-            "./src/Foundation/helpers.php"
+            "./src/helpers.php"
         ]
     }
 }
