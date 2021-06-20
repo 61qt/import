@@ -1,6 +1,6 @@
 <?php
 
-namespace QT\Import\Rules;
+namespace QT\Import\Contracts;
 
 interface Validatable
 {

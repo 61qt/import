@@ -3,6 +3,7 @@
 namespace QT\Import\Rules;
 
 use Illuminate\Support\Arr;
+use QT\Import\Contracts\Validatable;
 use Illuminate\Database\Eloquent\Builder;
 
 abstract class ValidateModels implements Validatable

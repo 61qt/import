@@ -2,7 +2,7 @@
 
 namespace QT\Import\Traits;
 
-use QT\Import\Rules\Validatable;
+use QT\Import\Contracts\Validatable;
 
 trait RowsValidator
 {
