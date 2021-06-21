@@ -45,6 +45,13 @@ abstract class Task
     protected $remarks = [];
 
     /**
+     * 下拉可选列
+     *
+     * @var array
+     */
+    protected $optional = [];
+
+    /**
      * 内存占用大小
      *
      * @var string
@@ -78,22 +85,6 @@ abstract class Task
      * @var int
      */
     protected $interval = 3;
-
-    /**
-     * 获取导入模板
-     * 
-     * @param array $input
-     * @return Template
-     */
-    public function getImportTemplate(array $input = []): Template
-    {
-        return new Template(
-            $this->fields,
-            $this->rules,
-            $this->remarks,
-            $this->dictionaries
-        );
-    }
 
     /**
      * 开始处理异步导入任务
@@ -234,5 +225,43 @@ abstract class Task
     protected function insertDB()
     {
         
+    }
+
+    /**
+     * 获取导入模板
+     * 
+     * @param array $input
+     * @return Template
+     */
+    public function getImportTemplate(array $input = []): Template
+    {
+        return new Template(
+            $this->fields,
+            $this->rules,
+            $this->remarks,
+            $this->dictionaries
+        );
+    }
+
+    /**
+     * 获取可选列
+     * 
+     * @param array $input
+     * @return array<string, \QT\Import\Contracts\Dictionary>
+     */
+    public function getOptionalColumns(array $input = []): array
+    {
+        $optional = [];
+        foreach ($this->optional as $field) {
+            $dictionary = $this->getDictionary($field);
+
+            if ($dictionary === null) {
+                continue;
+            }
+
+            $optional[$field] = $dictionary;
+        }
+
+        return $optional;
     }
 }

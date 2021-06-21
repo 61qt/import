@@ -321,7 +321,7 @@ class Template
             $line = 0;
             $dict = [];
             foreach ($dictionaries[$column]->all() as $key => $value) {
-                $dict[$line++] = [$key, $value];
+                $dict[$line++] = $key;
             }
 
             $maxLine = max($maxLine, $line);
@@ -342,7 +342,6 @@ class Template
         $first = [];
         foreach (array_keys($columns) as $column) {
             $first[] = "{$this->columns[$column]}字典";
-            $first[] = "字典含义";
         }
 
         $rows = [$first];
@@ -350,16 +349,16 @@ class Template
             $row = [];
             foreach ($columns as $column => $dict) {
                 if (!empty($dict[$line])) {
-                    array_push($row, ...$dict[$line]);
+                    array_push($row, $dict[$line]);
                 } else {
-                    array_push($row, null, null);
+                    array_push($row, null);
                 }
             }
 
             $rows[] = $row;
         }
 
-        $sheet->setTitle('导入字典');
+        $sheet->setTitle('枚举列可导入内容');
         $this->addStrictStringRows($sheet, $rows);
     }
 
