@@ -364,6 +364,29 @@ class Template
     }
 
     /**
+     * 在excel第三个sheet中生成示例(自动生成和模板一样的首行)
+     *
+     * @param array $templates
+     */
+    public function generateTemplateSheet(array $templates)
+    {
+        if (is_null($this->columnsSheetIndex)) {
+            throw new RuntimeException('只有在导入表头加载完成后才允许生成示例');
+        }
+
+        // 获取导入用的sheet后一个sheet
+        $sheet = $this->spreadsheet->createSheet(
+            $this->spreadsheet->getActiveSheetIndex() + 1
+        );
+
+        $sheet->setTitle('导入示例');
+        // 生成首行信息
+        $this->generateFirstColumn($sheet);
+        // 添加演示模板数据
+        $this->addStrictStringRows($sheet, $templates, 0, 2);
+    }
+
+    /**
      * 将文件保存到指定位置
      *
      * @param string $filename
