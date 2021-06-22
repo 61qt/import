@@ -25,17 +25,6 @@ trait Events
     }
 
     /**
-     * 监听批量导入部分失败事件
-     *
-     * @param  \Closure|string  $callback
-     * @return void
-     */
-    public function warning($callback)
-    {
-        $this->registerModelEvent('warning', $callback);
-    }
-
-    /**
      * 监听批量导入执行失败事件
      *
      * @param  \Closure|string  $callback

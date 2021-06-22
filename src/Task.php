@@ -112,14 +112,8 @@ abstract class Task
             $this->checkAndFormatRows();
             // 插入到db
             $this->insertDB();
-
-            // 错误行上报
-            if (!empty($this->errors)) {
-                $this->fireEvent('warning', $this->errors);
-            }
-
-            // 记录成功导入数量
-            $this->fireEvent('complete', count($this->rows));
+            // 触发任务完成事件
+            $this->fireEvent('complete', count($this->rows), $this->errors);
         } catch (\Throwable $e) {
             // 防止没有监听事件时无法获取错误信息
             if (empty($this->getEventDispatcher())) {
