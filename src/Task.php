@@ -222,6 +222,17 @@ abstract class Task
     }
 
     /**
+     * 获取导入列配置信息与选项
+     * 
+     * @param array $input
+     * @return array
+     */
+    public function getColumnsOptions()
+    {
+        return [$this->fields, $this->rules, $this->remarks];
+    }
+
+    /**
      * 获取导入模板
      * 
      * @param array $input
@@ -229,12 +240,7 @@ abstract class Task
      */
     public function getImportTemplate(array $input = []): Template
     {
-        return new Template(
-            $this->fields,
-            $this->rules,
-            $this->remarks,
-            $this->dictionaries
-        );
+        return new Template(...$this->getColumnsOptions());
     }
 
     /**
