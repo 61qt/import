@@ -261,7 +261,7 @@ trait CheckAndFormat
      */
     protected function getValidationFactory(): Factory
     {
-        return $this->factory ?: Container::getInstance()->make(Factory::class);
+        return $this->factory ?: Container::getInstance()->get(Factory::class);
     }
 
     /**
