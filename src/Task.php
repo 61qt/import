@@ -88,6 +88,13 @@ abstract class Task
     protected $interval = 3;
 
     /**
+     * 是否捕获错误
+     *
+     * @var bool
+     */
+    protected $catch = true;
+
+    /**
      * 开始处理异步导入任务
      *
      * @param string $filename
@@ -144,6 +151,10 @@ abstract class Task
 
                 $this->rows[$line] = $row;
             } catch (Throwable $e) {
+                if (!$this->catch) {
+                    throw $e;
+                }
+
                 // 整合错误信息文档
                 $this->errors[$line] = new ImportError($this->originalRows[$line], $line, $e);
                 // 错误行不保留原始数据
