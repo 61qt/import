@@ -2,6 +2,7 @@
 
 namespace QT\Import;
 
+use Throwable;
 use RuntimeException;
 use QT\Import\Traits\Events;
 use QT\Import\Traits\ParseXlsx;
@@ -114,7 +115,7 @@ abstract class Task
             $this->insertDB();
             // 触发任务完成事件
             $this->fireEvent('complete', count($this->rows), $this->errors);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // 防止没有监听事件时无法获取错误信息
             if (empty($this->getEventDispatcher())) {
                 throw $e;
@@ -142,7 +143,7 @@ abstract class Task
                 }
 
                 $this->rows[$line] = $row;
-            } catch (\Throwable$e) {
+            } catch (Throwable $e) {
                 // 整合错误信息文档
                 $this->errors[$line] = new ImportError($this->originalRows[$line], $line, $e);
                 // 错误行不保留原始数据
