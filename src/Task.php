@@ -182,8 +182,12 @@ abstract class Task
     {
         $errors = [];
         foreach ($this->dictionaries as $field => $dict) {
+            if (!isset($data[$field])) {
+                continue;
+            }
+
             $value = $this->formatDict($data[$field], $dict);
-    
+
             if ($value !== false) {
                 $data[$field] = $value;
             } else {
@@ -230,12 +234,12 @@ abstract class Task
      */
     protected function insertDB()
     {
-        
+
     }
 
     /**
      * 获取导入列配置信息与选项
-     * 
+     *
      * @param array $input
      * @return array
      */
@@ -246,7 +250,7 @@ abstract class Task
 
     /**
      * 获取导入模板
-     * 
+     *
      * @param array $input
      * @return Template
      */
@@ -257,7 +261,7 @@ abstract class Task
 
     /**
      * 获取可选列
-     * 
+     *
      * @param array $input
      * @return array<string, \QT\Import\Contracts\Dictionary>
      */
