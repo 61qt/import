@@ -218,7 +218,7 @@ trait CheckAndFormat
             $messages[] = "原表{$pos} 错误: {$message}";
         }
 
-        throw new RuntimeException(join(',', $messages));
+        throw new RuntimeException(join("\n", $messages));
     }
 
     /**
