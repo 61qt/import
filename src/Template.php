@@ -28,9 +28,20 @@ class Template
 {
     use ReplacesAttributes;
 
+    /**
+     * @var Spreadsheet
+     */
     protected $spreadsheet;
 
+    /**
+     * @var int
+     */
     protected $columnsSheetIndex;
+
+    /**
+     * @var string
+     */
+    protected $dictSheetTitle = '枚举列可导入内容';
 
     /**
      * 列名
@@ -81,6 +92,24 @@ class Template
             "Integer" => "数值范围 :min - :max 之间。",
             "Numeric" => "数值范围 :min - :max 之间。",
             "String"  => "必须介于 :min - :max 个字符之间。",
+        ],
+    ];
+
+    protected $ruleStyles = [
+        'Required' => [
+            'fill'    => [
+                'fillType'   => Fill::FILL_SOLID,
+                'startColor' => ['argb' => Color::COLOR_RED],
+            ],
+            'font'    => [
+                'color' => ['argb' => Color::COLOR_WHITE],
+            ],
+            'borders' => [
+                'outline' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                    'color'       => ['argb' => Color::COLOR_BLACK],
+                ],
+            ],
         ],
     ];
 
@@ -151,24 +180,10 @@ class Template
                 $sheet->getComment("{$coordinate}1")->setText($text);
             }
 
-            // TODO 允许根据校验规则设置样式 {required: styles}
-            if (array_key_exists('Required', $rules)) {
-                // 必填参数背景设置为红色,字体颜色设置为白色,边框颜色设置为黑色
-                $sheet->getStyle("{$coordinate}1")->applyFromArray([
-                    'fill'    => [
-                        'fillType'   => Fill::FILL_SOLID,
-                        'startColor' => ['argb' => Color::COLOR_RED],
-                    ],
-                    'font'    => [
-                        'color' => ['argb' => Color::COLOR_WHITE],
-                    ],
-                    'borders' => [
-                        'outline' => [
-                            'borderStyle' => Border::BORDER_THIN,
-                            'color'       => ['argb' => Color::COLOR_BLACK],
-                        ],
-                    ],
-                ]);
+            foreach ($this->ruleStyles as $rule => $sytle) {
+                if (array_key_exists($rule, $rules)) {
+                    $sheet->getStyle("{$coordinate}1")->applyFromArray($sytle);
+                }
             }
         }
     }
@@ -264,24 +279,31 @@ class Template
      *
      * @param array<string, Dictionary> $dictionaries
      */
-    public function setOptionalColumns(array $dictionaries)
+    public function setOptionalColumns(array $dictionaries, $dictSheetTitle = null)
     {
         if (null === $this->columnsSheetIndex) {
             throw new RuntimeException('只有在导入表头加载完成后才允许生成字典');
         }
 
-        // 保证字典与导入sheet同步
         $sheet = $this->spreadsheet->getSheet($this->columnsSheetIndex);
+        $title = $dictSheetTitle ?: $this->dictSheetTitle;
 
-        $columns = array_keys($this->columns);
-        foreach ($dictionaries as $column => $dictionary) {
-            $columnIndex = array_search($column, $columns);
-
-            if ($columnIndex === false) {
+        $maxLine   = 0;
+        $dictIndex = 0;
+        $columns   = [];
+        foreach (array_keys($this->columns) as $columnIndex => $column) {
+            if (empty($dictionaries[$column])) {
                 continue;
             }
 
-            // todo 根据是否必填检查是否允许为空
+            $line             = 0;
+            $columns[$column] = [];
+            foreach ($dictionaries[$column]->all() as $key => $value) {
+                $columns[$column][$line++] = $key;
+            }
+
+            $maxLine = max($maxLine, $line);
+
             $validation = (new DataValidation)
                 ->setType(DataValidation::TYPE_LIST)
                 ->setErrorStyle(DataValidation::STYLE_INFORMATION)
@@ -291,44 +313,44 @@ class Template
                 ->setShowDropDown(true)
                 ->setErrorTitle('输入错误')
                 ->setError("必须在可选的范围内")
-                ->setFormula1('"' . join(',', $dictionary->keys()) . '"');
+                ->setFormula1($this->getFormula(
+                    $title, 
+                    Coordinate::stringFromColumnIndex(++$dictIndex),
+                    count($columns[$column])
+                ));
 
             $column = Coordinate::stringFromColumnIndex($columnIndex + 1);
             // 给1~200000行设置下拉选项
             $sheet->setDataValidation("{$column}2:{$column}200000", $validation);
         }
+
+        $this->generateDictSheet($columns, $maxLine, $title);
+    }
+
+    /**
+     * @param string $column
+     * @param int $startLine
+     * @param int $endLine
+     * @return string
+     */
+    protected function getFormula($title, $column, $endLine)
+    {
+        return str_replace(
+            ['{title}', '{column}', '{endLine}'], 
+            [$title, $column, $endLine], 
+            '{title}!${column}$2:${column}${endLine}'
+        );
     }
 
     /**
      * 在excel第二个sheet中生成字典
      *
-     * @param array<string, Dictionary> $dictionaries
+     * @param array<string, Dictionary> $columns
+     * @param int $maxLine
+     * @param string $title
      */
-    public function generateDictSheet($dictionaries)
+    protected function generateDictSheet($columns, $maxLine, $title)
     {
-        if (null === $this->columnsSheetIndex) {
-            throw new RuntimeException('只有在导入表头加载完成后才允许生成字典');
-        }
-
-        $maxLine = 0;
-        $columns = [];
-        // 检查那些导入列需要设置字典
-        foreach (array_keys($this->columns) as $column) {
-            if (empty($dictionaries[$column])) {
-                continue;
-            }
-
-            $line = 0;
-            $dict = [];
-            foreach ($dictionaries[$column]->all() as $key => $value) {
-                $dict[$line++] = $key;
-            }
-
-            $maxLine = max($maxLine, $line);
-
-            $columns[$column] = $dict;
-        }
-
         if (empty($columns)) {
             return;
         }
@@ -358,7 +380,8 @@ class Template
             $rows[] = $row;
         }
 
-        $sheet->setTitle('枚举列可导入内容');
+        $sheet->setTitle($title);
+
         $this->addStrictStringRows($sheet, $rows);
     }
 
