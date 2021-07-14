@@ -316,7 +316,7 @@ class Template
                 ->setFormula1($this->getFormula(
                     $title, 
                     Coordinate::stringFromColumnIndex(++$dictIndex),
-                    count($columns[$column])
+                    count($columns[$column]) + 1
                 ));
 
             $column = Coordinate::stringFromColumnIndex($columnIndex + 1);
