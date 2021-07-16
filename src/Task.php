@@ -102,9 +102,6 @@ abstract class Task
      */
     public function handle(string $filename, array $options = [])
     {
-        $this->bootDictErrorMessages();
-        $this->bootCheckTableDuplicated();
-
         ini_set('memory_limit', $this->memoryLimit);
 
         $this->options = $options;
@@ -114,6 +111,9 @@ abstract class Task
             if (method_exists($this, 'beforeImport')) {
                 $this->beforeImport($options);
             }
+            // 初始化错误信息
+            $this->bootDictErrorMessages();
+            $this->bootCheckTableDuplicated();
             // 处理excel文件
             $this->processFile($filename);
             // 从excel中提取的数据进行批量处理
