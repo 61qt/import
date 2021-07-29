@@ -7,8 +7,10 @@ use RuntimeException;
 use QT\Import\Traits\Events;
 use QT\Import\Traits\ParseXlsx;
 use QT\Import\Traits\RowsValidator;
+use Illuminate\Database\Connection;
 use QT\Import\Traits\CheckAndFormat;
 use QT\Import\Exceptions\ImportError;
+use Illuminate\Database\Eloquent\Model;
 use QT\Import\Traits\CheckTableDuplicated;
 
 /**
@@ -30,6 +32,13 @@ abstract class Task
      * @var int
      */
     const MAX_CHARACTERS_PER_CELL = 32767;
+
+    /**
+     * 导入的主体model
+     * 
+     * @var string
+     */
+    protected $model;
 
     /**
      * 允许导入字段 (需要配置)
@@ -106,6 +115,11 @@ abstract class Task
 
         $this->options = $options;
 
+        if (!empty($this->model) && is_subclass_of($this->model, Model::class)) {
+            /** @var Connection $connection */
+            $connection = $this->model::query()->getConnection();
+        }
+
         try {
             // 支持在任务开始前对option内容进行检查处理
             if (method_exists($this, 'beforeImport')) {
@@ -119,7 +133,11 @@ abstract class Task
             // 从excel中提取的数据进行批量处理
             $this->checkAndFormatRows();
             // 插入到db
-            $this->insertDB();
+            if (empty($connection)) {
+                $this->insertDB();
+            } else {
+                $connection->transaction(fn() => $this->insertDB());
+            }
             // 触发任务完成事件
             $this->fireEvent('complete', count($this->rows), $this->errors);
         } catch (Throwable $e) {
