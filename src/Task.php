@@ -104,6 +104,13 @@ abstract class Task
     protected $catch = true;
 
     /**
+     * 是否启用事务
+     *
+     * @var bool
+     */
+    protected $useTransaction = true;
+
+    /**
      * 开始处理异步导入任务
      *
      * @param string $filename
@@ -133,7 +140,7 @@ abstract class Task
             // 从excel中提取的数据进行批量处理
             $this->checkAndFormatRows();
             // 插入到db
-            if (empty($connection)) {
+            if (empty($connection) || !$this->useTransaction) {
                 $this->insertDB();
             } else {
                 $connection->transaction(fn() => $this->insertDB());
