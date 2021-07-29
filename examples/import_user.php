@@ -56,12 +56,9 @@ $task->setDictionary('user_type', new Dict([
     '普通用户' => 3,
 ]));
 
-$task->complete(function (int $success) {
+$task->complete(function (int $success, array $errors) {
     echo "导入成功{$success}条";
-});
-
-$task->warning(function (array $errors) {
-    var_dump($errors);
+    // Handler errors
 });
 
 $task->failed(function (Throwable $e) {
