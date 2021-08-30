@@ -4,6 +4,6 @@ namespace QT\Import\Exceptions;
 
 use Exception;
 
-class ImportException implements Exception
+class ValidateException implements Exception
 {
 }
