@@ -4,6 +4,6 @@ namespace QT\Import\Exceptions;
 
 use RuntimeException;
 
-class ValidateException implements RuntimeException
+class ValidateException extends RuntimeException
 {
 }
