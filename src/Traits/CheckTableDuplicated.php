@@ -5,6 +5,7 @@ namespace QT\Import\Traits;
 use RuntimeException;
 use Illuminate\Support\Arr;
 use Illuminate\Database\Query\Expression;
+use QT\Import\Exceptions\ValidationException;
 
 /**
  * 检查同一个列表内数据是否重复
@@ -83,7 +84,7 @@ trait CheckTableDuplicated
             $conflictLine = $this->existingFieldValues[$key][$value];
             $errField     = join(', ', array_map(fn($field) => $attributes[$field] ?? $field, $fields));
 
-            throw new RuntimeException(sprintf(
+            throw new ValidationException(sprintf(
                 "%s 错误: 原表第%s行 与 第%s行 重复,请确保数据表内的数据为唯一的",
                 $errField,
                 $line,

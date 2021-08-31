@@ -7,6 +7,7 @@ use Illuminate\Container\Container;
 use QT\Import\Contracts\Dictionary;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Contracts\Validation\Factory;
+use QT\Import\Exceptions\ValidationException;
 use Box\Spout\Writer\Common\Helper\CellHelper;
 
 trait CheckAndFormat
@@ -218,7 +219,7 @@ trait CheckAndFormat
             $messages[] = "原表{$pos} 错误: {$message}";
         }
 
-        throw new RuntimeException(join("\n", $messages));
+        throw new ValidationException(join("\n", $messages));
     }
 
     /**

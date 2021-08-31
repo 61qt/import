@@ -12,6 +12,7 @@ use QT\Import\Traits\CheckAndFormat;
 use QT\Import\Exceptions\ImportError;
 use Illuminate\Database\Eloquent\Model;
 use QT\Import\Traits\CheckTableDuplicated;
+use QT\Import\Exceptions\ValidationException;
 
 /**
  * Import Task
@@ -242,7 +243,7 @@ abstract class Task
             $row = $this->originalRows[$line];
 
             $this->errors[$line] = new ImportError(
-                $row, $line, new RuntimeException(join('; ', $errorMessages))
+                $row, $line, new ValidationException(join('; ', $errorMessages))
             );
 
             unset($this->rows[$line]);
