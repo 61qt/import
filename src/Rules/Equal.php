@@ -2,7 +2,14 @@
 
 namespace QT\Import\Rules;
 
+use RuntimeException;
 use Illuminate\Support\Arr;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 /**
  * 检查导入数据与数据库中已存在的数据是否一致
@@ -24,13 +31,12 @@ use Illuminate\Support\Arr;
  *     字段校验错误时自定义的错误信息
  *
  * eq:
- * 图书分类与系统已存在的图书分类是否一致(用isbn与name确认唯一书籍)
  * new Equal(
- *     Book::query(),
- *     [['isbn', 'name']],
- *     ['department_id' => 123],
- *     ['book_category_code' => 'bookCategory.code'],
- *     ['book_category_code' => '分类号与数据库已有数据不一致']
+ *     Model::query(),
+ *     ['id'],
+ *     ['foo' => 'bar'],
+ *     ['name' => 'name', 'relation_data' => 'relation.data'],
+ *     ['name' => '名称不一致', 'relation_data' => '与关联数据对比不一致']
  * )
  */
 class Equal extends ValidateModels
@@ -56,28 +62,55 @@ class Equal extends ValidateModels
         array $equalFields = [],
         array $messages = []
     ) {
-        $this->equalFields = $equalFields;
+        $model = $query instanceof Builder 
+            ? $query->getModel() 
+            : null;
 
+        // 检查有没有关联字段
+        foreach ($equalFields as $alias => $field) {
+            if (is_int($alias)) {
+                $alias = $field;
+            }
+
+            $this->equalFields[] = [$alias, $field];
+
+            if (false === strpos($field, '.')) {
+                $this->select[] = $field;
+                continue;
+            }
+
+            $relation = Arr::first(explode('.', $field));
+
+            if ($model === null || !method_exists($model, $relation)) {
+                continue;
+            }
+
+            $this->select[] = $this->getWithKeyName($model->{$relation}());
+        }
+    
         parent::__construct($query, $attributes, $wheres, [], [], $messages);
     }
 
-    protected function buildSql($query, $rows, $fields)
+    /**
+     * 获取关联字段
+     *
+     * @param Relation $relation
+     * @return string
+     * @throws RuntimeException
+     */
+    protected function getWithKeyName(Relation $relation): string
     {
-        list($query, $lines) = parent::buildSql($query, $rows, $fields);
-
-        $model = $query->getModel();
-
-        if (property_exists($model, 'withFields')) {
-            $fields = array_merge($fields, $model->withFields);
-        }
-        foreach ($this->equalFields as $field) {
-            if (false === strpos($field, '.')) {
-                $fields[] = $field;
-            }
+        if ($relation instanceof BelongsTo) {
+            return $relation->getForeignKeyName();
+        } elseif ($relation instanceof HasOneOrMany) {
+            return $relation->getLocalKeyName();
+        } elseif ($relation instanceof BelongsToMany) {
+            return $relation->getParentKeyName();
+        } elseif ($relation instanceof HasManyThrough) {
+            return $relation->getLocalKeyName();
         }
 
-        // 默认选中全部关联字段,保证不影响with
-        return [$query->select($fields), $lines];
+        throw new RuntimeException("无法从Relation上获取关联字段");
     }
 
     /**
@@ -104,15 +137,9 @@ class Equal extends ValidateModels
         });
 
         // excel表导入名 => 在database中的字段名
-        foreach ($this->equalFields as $alias => $field) {
-            if (is_int($alias)) {
-                $alias = $field;
-            }
-
+        foreach ($this->equalFields as [$alias, $field]) {
             if (false !== strpos($field, '.')) {
-                list($relation) = explode('.', $field, 2);
-                // 关联
-                $models->load($relation);
+                $models->load(Arr::first(explode('.', $field, 2)));
             }
 
             // 验证数据是否与db中一致
