@@ -110,13 +110,13 @@ class Equal extends ValidateModels
     protected function getWithKeyName(Relation $relation): string
     {
         if ($relation instanceof BelongsTo) {
-            return $relation->getForeignKeyName();
+            return $relation->getQualifiedForeignKeyName();
         } elseif ($relation instanceof HasOneOrMany) {
-            return $relation->getLocalKeyName();
+            return $relation->getQualifiedParentKeyName();
         } elseif ($relation instanceof BelongsToMany) {
-            return $relation->getParentKeyName();
+            return $relation->getQualifiedParentKeyName();
         } elseif ($relation instanceof HasManyThrough) {
-            return $relation->getLocalKeyName();
+            return $relation->getQualifiedLocalKeyName();
         }
 
         throw new RuntimeException("无法从Relation上获取关联字段");
