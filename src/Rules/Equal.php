@@ -55,8 +55,15 @@ class Equal extends ValidateModels
      */
     protected $equalFields = [];
 
+    /**
+     * @param Builder $query
+     * @param array $attributes
+     * @param array $wheres
+     * @param array $equalFields
+     * @param array $messages
+     */
     public function __construct(
-        $query,
+        Builder $query,
         array $attributes,
         array $wheres = [],
         array $equalFields = [],
@@ -84,6 +91,8 @@ class Equal extends ValidateModels
             if ($model === null || !method_exists($model, $relation)) {
                 continue;
             }
+            // model不为空时,说明是 Eloquent\Builder
+            $query->with($relation);
 
             $this->select[] = $this->getWithKeyName($model->{$relation}());
         }
@@ -138,10 +147,6 @@ class Equal extends ValidateModels
 
         // excel表导入名 => 在database中的字段名
         foreach ($this->equalFields as [$alias, $field]) {
-            if (false !== strpos($field, '.')) {
-                $models->load(Arr::first(explode('.', $field, 2)));
-            }
-
             // 验证数据是否与db中一致
             foreach ($lines as [$line, $key, $row]) {
                 // 如果数据库中没有不做检查

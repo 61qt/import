@@ -26,6 +26,13 @@ abstract class ValidateModels implements Validatable
     protected $ignoreFields = [];
 
     /**
+     * 默认选中字段
+     * 
+     * @var array
+     */
+    protected $select = [];
+
+    /**
      * 默认筛选条件,在给每一行生成sql时中自动填充
      *
      * @var array
@@ -179,7 +186,9 @@ abstract class ValidateModels implements Validatable
             $lines[] = [$line, array_to_key($values), $row];
         }
 
-        return [$query->select($fields), $lines];
+        $select = array_merge($this->select, $fields);
+
+        return [$query->select(array_unique($select)), $lines];
     }
 
     /**
