@@ -131,7 +131,7 @@ class ExistsAndUnique extends ValidateModels
         $message
     ) {
         $groups = $models->groupBy(function ($model) use ($fields) {
-            return $model->toKey($fields);
+            return array_to_key($model->only($fields));
         });
 
         // 获取数据不存在的错误行
