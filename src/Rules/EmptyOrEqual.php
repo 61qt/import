@@ -67,7 +67,7 @@ class EmptyOrEqual extends Equal
         });
 
         // excel表导入名 => 在database中的字段名
-        foreach ($this->equalFields as $alias => $field) {
+        foreach ($this->equalFields as [$alias, $field]) {
             if (is_int($alias)) {
                 $alias = $field;
             }
