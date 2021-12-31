@@ -6,8 +6,8 @@ use Throwable;
 use RuntimeException;
 use QT\Import\Traits\Events;
 use QT\Import\Traits\ParseXlsx;
-use QT\Import\Traits\RowsValidator;
 use Illuminate\Database\Connection;
+use QT\Import\Traits\RowsValidator;
 use QT\Import\Traits\CheckAndFormat;
 use QT\Import\Exceptions\ImportError;
 use Illuminate\Database\Eloquent\Model;
@@ -36,7 +36,7 @@ abstract class Task
 
     /**
      * 导入的主体model
-     * 
+     *
      * @var string
      */
     protected $model;

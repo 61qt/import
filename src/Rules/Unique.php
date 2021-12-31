@@ -6,12 +6,12 @@ use Illuminate\Database\Eloquent\Collection;
 
 /**
  * 检查导入数据再db中是否唯一,如果不唯一抛出错误
- * 
+ *
  * Class Unique
  * @package QT\Import\Rules
- * 
+ *
  * 参数说明:
- * 
+ *
  * query:
  *     laravel sql builder,可以提前设置部分条件再传入
  * attributes:
@@ -24,12 +24,12 @@ use Illuminate\Database\Eloquent\Collection;
  *     excel字段再db中的真实字段名
  * messages:
  *     字段校验错误时自定义的错误信息
- * 
- * eq: 
+ *
+ * eq:
  * 检查当前id以外是否有用户已经占用了身份证
  * new Unique(
- *     User::query(), 
- *     [['id_number', 'user_type'], 'email'], 
+ *     User::query(),
+ *     [['id_number', 'user_type'], 'email'],
  *     ['department_id' => 123],
  *     ['id'],
  *     ['excel内字段名' => '数据库中字段名'],
@@ -40,7 +40,7 @@ class Unique extends ValidateModels
 {
     /**
      * 默认错误信息
-     * 
+     *
      * @var string
      */
     protected $defaultErrorMessage = '已存在,请保证数据不重复后再次导入';
@@ -86,7 +86,7 @@ class Unique extends ValidateModels
      * @param $key
      * @param $row
      * @param $errMsg
-     * 
+     *
      * @return array
      */
     protected function checkExists($models, $key, $row, $errMsg)

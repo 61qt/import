@@ -8,6 +8,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 
+/**
+ * ValidateModels
+ * @package QT\Import\Rules
+ */
 abstract class ValidateModels implements Validatable
 {
     /**
@@ -64,7 +68,7 @@ abstract class ValidateModels implements Validatable
 
     /**
      * 校验错误时字段对应的展示名称
-     * 
+     *
      * @var array
      */
     protected $customAttributes = [];
@@ -146,8 +150,8 @@ abstract class ValidateModels implements Validatable
 
             // 通过检查数据库数据判断导入数据是否可用
             $this->validateModels(
-                $query->get(), 
-                $lines, 
+                $query->get(),
+                $lines,
                 $fields,
                 $this->formatErrorFields($fields),
                 $this->messages[$key] ?? $this->defaultErrorMessage
@@ -289,7 +293,7 @@ abstract class ValidateModels implements Validatable
 
     /**
      * 获取字段对外展示名称
-     * 
+     *
      * @param string $field
      * @return string
      */

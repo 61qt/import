@@ -21,49 +21,49 @@ trait CheckAndFormat
 
     /**
      * 字段校验规则 (需要配置)
-     * 
+     *
      * @var array
      */
     protected $rules = [];
 
     /**
      * validate 自定义错误信息
-     * 
+     *
      * @var array
      */
     protected $messages = [];
 
     /**
      * validate 自定义属性
-     * 
+     *
      * @var array
      */
     protected $customAttributes = [];
 
     /**
      * 是否使用默认值填充
-     * 
+     *
      * @var bool
      */
     protected $useDefault = true;
 
     /**
      * 字段默认值
-     * 
+     *
      * @var array
      */
     protected $default = [];
 
     /**
      * 可用字典
-     * 
+     *
      * @var array<string, Dictionary>
      */
     protected $dictionaries = [];
 
     /**
      * 字典错误时自定义错误信息
-     * 
+     *
      * @var array
      */
     protected $dictErrorMessages = [];
@@ -94,7 +94,7 @@ trait CheckAndFormat
 
     /**
      * 获取所有字典
-     * 
+     *
      * @return array<Dictionary>
      */
     public function getDictionaries(): array
@@ -104,7 +104,7 @@ trait CheckAndFormat
 
     /**
      * 获取导入字段对应的字典
-     * 
+     *
      * @param string $field
      * @return Dictionary|null
      */
@@ -119,7 +119,7 @@ trait CheckAndFormat
 
     /**
      * 给导入字段指定字典
-     * 
+     *
      * @param string $field
      * @param Dictionary $dict
      */

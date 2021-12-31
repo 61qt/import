@@ -314,7 +314,7 @@ class Template
                 ->setErrorTitle('输入错误')
                 ->setError("必须在可选的范围内")
                 ->setFormula1($this->getFormula(
-                    $title, 
+                    $title,
                     Coordinate::stringFromColumnIndex(++$dictIndex),
                     count($columns[$column]) + 1
                 ));
@@ -336,8 +336,8 @@ class Template
     protected function getFormula($title, $column, $endLine)
     {
         return str_replace(
-            ['{title}', '{column}', '{endLine}'], 
-            [$title, $column, $endLine], 
+            ['{title}', '{column}', '{endLine}'],
+            [$title, $column, $endLine],
             '{title}!${column}$2:${column}${endLine}'
         );
     }

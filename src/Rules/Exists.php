@@ -6,12 +6,12 @@ use Illuminate\Database\Eloquent\Collection;
 
 /**
  * 检查导入数据再数据库中是否存在,如果不存在就抛出错误
- * 
+ *
  * Class Exists
  * @package QT\Import\Rules
- * 
+ *
  * 参数说明:
- * 
+ *
  * query:
  *     laravel sql builder,可以提前设置部分条件再传入
  * attributes:
@@ -24,12 +24,12 @@ use Illuminate\Database\Eloquent\Collection;
  *     excel字段再db中的真实字段名
  * messages:
  *     字段校验错误时自定义的错误信息
- * 
- * eq: 
+ *
+ * eq:
  * 检查除了id相同的以外用户身份证是否存在
  * new Exists(
- *     User::query(), 
- *     [['id_number', 'user_type'], 'email'], 
+ *     User::query(),
+ *     [['id_number', 'user_type'], 'email'],
  *     ['department_id' => 123],
  *     ['id'],
  *     ['excel内字段名' => '数据库中字段名'],
@@ -40,7 +40,7 @@ class Exists extends ValidateModels
 {
     /**
      * 默认错误信息
-     * 
+     *
      * @var string
      */
     protected $defaultErrorMessage = '不存在,保证数据已存在时再尝试导入';
@@ -82,13 +82,13 @@ class Exists extends ValidateModels
      * @param $key
      * @param $row
      * @param $errMsg
-     * 
+     *
      * @return array
      */
     protected function checkExists($models, $key, $row, $errMsg)
     {
         return $models->has($key)
-            ? [true, null]
-            : [false, $errMsg];
+           ? [true, null]
+           : [false, $errMsg];
     }
 }

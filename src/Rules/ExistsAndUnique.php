@@ -9,12 +9,12 @@ use Illuminate\Database\Query\Builder as BaseBuilder;
 /**
  * 根据单行中特定的字段检查是否存在
  * 如果存在并且有多条,再根据另外的字段进行第二次匹配
- * 
+ *
  * Class ExistsAndUnique
  * @package App\Tasks\Import\Rules
- * 
+ *
  * 参数说明:
- * 
+ *
  * query:
  *     laravel sql builder,可以提前设置部分条件再传入
  * attributes:
@@ -31,12 +31,12 @@ use Illuminate\Database\Query\Builder as BaseBuilder;
  *     数据不存在时抛出的错误信息
  * notUniqueMessage:
  *     数据重复时抛出的错误信息
- * 
- * eq: 
+ *
+ * eq:
  * 根据名称检查用户是否存在,如果有多条,再根据身份证检查进行精准匹配
  * new ExistsAndUnique(
- *     User::query(), 
- *     ['name'], 
+ *     User::query(),
+ *     ['name'],
  *     ['id_number'],
  *     ['department_id' => 123],
  *     ['id'],
@@ -149,7 +149,7 @@ class ExistsAndUnique extends ValidateModels
      * @param $groups
      * @param $key
      * @param $row
-     * 
+     *
      * @return array
      */
     protected function checkGroup($groups, $key, $row)

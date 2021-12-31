@@ -8,17 +8,17 @@ trait RowsValidator
 {
     /**
      * 获取数据库内需要进行唯一性检查的字段
-     * 
+     *
      * @return array
      */
-    protected function getRowsRules() : array
+    protected function getRowsRules(): array
     {
         return [];
     }
 
     /**
      * 将需要导入的结果集进行批量检查
-     * 
+     *
      * @param $rows
      */
     protected function validateRows($rows)

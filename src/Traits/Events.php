@@ -74,7 +74,7 @@ trait Events
             return true;
         }
 
-        return $this->dispatcher->dispatch("qt.{$event}:".static::class, $params);
+        return $this->dispatcher->dispatch("qt.{$event}:" . static::class, $params);
     }
 
     /**

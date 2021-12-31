@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Support\Arr;
-
 if (!function_exists('array_to_key')) {
     // 将数组内容进行hash之后组成key,避免如下问题
     // join('', ['aa', 'bb', 'cc']) === join('', ['aab', 'bcc'])

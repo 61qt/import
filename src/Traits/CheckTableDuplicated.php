@@ -2,7 +2,6 @@
 
 namespace QT\Import\Traits;
 
-use RuntimeException;
 use Illuminate\Support\Arr;
 use Illuminate\Database\Query\Expression;
 use QT\Import\Exceptions\ValidationException;
