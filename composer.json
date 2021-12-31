@@ -20,6 +20,10 @@
         "illuminate/database": "^8.0",
         "phpoffice/phpspreadsheet": "^1.11"
     },
+    "require-dev": {
+        "mockery/mockery": "^1.4.2",
+        "phpunit/phpunit": "^9.3.3"
+    },
     "autoload": {
         "psr-4": {
             "QT\\Import\\": "src/"
@@ -27,5 +31,10 @@
         "files": [
             "./src/helpers.php"
         ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Test\\QT\\Import\\": "tests"
+        }
     }
 }
