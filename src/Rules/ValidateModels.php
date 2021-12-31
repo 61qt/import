@@ -5,6 +5,8 @@ namespace QT\Import\Rules;
 use Illuminate\Support\Arr;
 use QT\Import\Contracts\Validatable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Query\Builder as BaseBuilder;
 
 abstract class ValidateModels implements Validatable
 {
@@ -27,7 +29,7 @@ abstract class ValidateModels implements Validatable
 
     /**
      * 默认选中字段
-     * 
+     *
      * @var array
      */
     protected $select = [];
@@ -61,6 +63,13 @@ abstract class ValidateModels implements Validatable
     protected $messages = [];
 
     /**
+     * 校验错误时字段对应的展示名称
+     * 
+     * @var array
+     */
+    protected $customAttributes = [];
+
+    /**
      * 默认错误信息
      *
      * @var string
@@ -77,7 +86,7 @@ abstract class ValidateModels implements Validatable
      *     ['id']
      * )
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param Builder|BaseBuilder $query
      * @param array $attributes
      * @param array $wheres
      * @param array $ignoreFields
@@ -85,7 +94,7 @@ abstract class ValidateModels implements Validatable
      * @param array $messages
      */
     public function __construct(
-        Builder $query,
+        Builder | BaseBuilder $query,
         array $attributes,
         array $wheres = [],
         array $ignoreFields = [],
@@ -123,21 +132,25 @@ abstract class ValidateModels implements Validatable
      */
     public function validate($rows, $customAttributes = []): bool
     {
+        $this->customAttributes = $customAttributes;
+
         foreach ($this->attributes as $key => $fields) {
             list($query, $lines) = $this->buildSql(
-                clone $this->query, $rows, $fields
+                $this->query->clone(), $rows, $fields
             );
 
-            // where条件对应的行号为空
-            // 说明没有生成条件,不做处理
+            // where条件对应的行号为空,说明没有生成条件,不做处理
             if (empty($lines)) {
                 continue;
             }
 
-            $errMsg = $this->messages[$key] ?? $this->defaultErrorMessage;
             // 通过检查数据库数据判断导入数据是否可用
-            $this->errors = $this->validateModels(
-                $query->get(), $lines, $fields, $customAttributes, $this->errors, $errMsg
+            $this->validateModels(
+                $query->get(), 
+                $lines, 
+                $fields,
+                $this->formatErrorFields($fields),
+                $this->messages[$key] ?? $this->defaultErrorMessage
             );
         }
 
@@ -147,7 +160,7 @@ abstract class ValidateModels implements Validatable
     /**
      * 获取错误行
      *
-     * @return bool
+     * @return array
      */
     public function errors(): array
     {
@@ -158,11 +171,11 @@ abstract class ValidateModels implements Validatable
      * TODO 支持分片查询,防止预处理占位符溢出
      * 生成where条件,并返回where条件对应的行号
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param Builder|BaseBuilder $query
      * @param array $rows
      * @param array $fields
      */
-    protected function buildSql($query, $rows, $fields)
+    protected function buildSql(Builder | BaseBuilder $query, $rows, $fields)
     {
         $lines   = [];
         $aliases = array_keys($fields);
@@ -197,7 +210,7 @@ abstract class ValidateModels implements Validatable
      * @param array $rows
      * @param array $aliases
      */
-    protected function getRowValues($row, $aliases)
+    protected function getRowValues(array $row, array $aliases)
     {
         $values = [];
         // 按照顺序取出row中的数据
@@ -215,11 +228,9 @@ abstract class ValidateModels implements Validatable
     /**
      * 生成默认填充的筛选条件
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param array $rows
-     * @param string $field
+     * @param Builder|BaseBuilder $query
      */
-    protected function buildDefaultConditions($query)
+    protected function buildDefaultConditions(Builder | BaseBuilder $query)
     {
         foreach ($this->wheres as $key => $value) {
             if (is_numeric($key) && is_array($value)) {
@@ -238,11 +249,11 @@ abstract class ValidateModels implements Validatable
     /**
      * 根据行内指定的字段进行筛选
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param Builder|BaseBuilder $query
+     * @param array $fields
      * @param array $rows
-     * @param string $field
      */
-    protected function buildConditions($query, $fields, $row)
+    protected function buildConditions(Builder | BaseBuilder $query, array $fields, array $row)
     {
         foreach ($fields as $alias => $field) {
             $query->where($field, $row[$alias]);
@@ -252,11 +263,10 @@ abstract class ValidateModels implements Validatable
     /**
      * 生成需要忽略记录的筛选条件
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param Builder|BaseBuilder $query
      * @param array $rows
-     * @param string $field
      */
-    protected function buildIgnoreConditions($query, $row)
+    protected function buildIgnoreConditions(Builder | BaseBuilder $query, array $row)
     {
         foreach ($this->ignoreFields as $field) {
             $query->where($field, '!=', $row[$field]);
@@ -264,23 +274,59 @@ abstract class ValidateModels implements Validatable
     }
 
     /**
+     * 格式化错误字段展示名称
+     *
+     * @param array $fields
+     * @return string
+     */
+    protected function formatErrorFields(array $fields): string
+    {
+        return collect(array_keys($fields))
+            ->map(fn($field) => $this->getFieldDisplayName($field))
+            ->filter(fn($field) => !empty($field))
+            ->implode(', ');
+    }
+
+    /**
+     * 获取字段对外展示名称
+     * 
+     * @param string $field
+     * @return string
+     */
+    protected function getFieldDisplayName(string $field): string
+    {
+        return $this->customAttributes[$field] ?? $field;
+    }
+
+    /**
+     * 添加错误信息
+     *
+     * @param int $line
+     * @param string $errorMessage
+     */
+    protected function addError(int $line, string $errMsg)
+    {
+        if (empty($this->errors[$line])) {
+            $this->errors[$line] = [];
+        }
+
+        $this->errors[$line][] = "原表第{$line}行: {$errMsg}";
+    }
+
+    /**
      * 验证models内容是否错误
      *
-     * @param $models
-     * @param $lines
-     * @param $fields
-     * @param $customAttributes
-     * @param $errorRows
-     * @param $message
-     *
-     * @return array
+     * @param Collection $models
+     * @param array $lines
+     * @param array $fields
+     * @param string $errField
+     * @param string $errMsg
      */
     abstract protected function validateModels(
-        $models,
-        $lines,
-        $fields,
-        $customAttributes,
-        $errorRows,
-        $message
+        Collection $models,
+        array $lines,
+        array $fields,
+        string $errField,
+        string $errMsg
     );
 }

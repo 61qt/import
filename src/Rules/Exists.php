@@ -2,6 +2,8 @@
 
 namespace QT\Import\Rules;
 
+use Illuminate\Database\Eloquent\Collection;
+
 /**
  * 检查导入数据再数据库中是否存在,如果不存在就抛出错误
  * 
@@ -46,46 +48,31 @@ class Exists extends ValidateModels
     /**
      * 检查数据是否不存在
      *
-     * @param $models
-     * @param $lines
-     * @param $fields
-     * @param $errorRows
-     * @param $message
-     * 
-     * @return array
+     * @param Collection $models
+     * @param array $lines
+     * @param array $fields
+     * @param string $errField
+     * @param string $errMsg
      */
     protected function validateModels(
-        $models,
-        $lines,
-        $fields,
-        $customAttributes,
-        $errorRows,
-        $message
+        Collection $models,
+        array $lines,
+        array $fields,
+        string $errField,
+        string $errMsg
     ) {
         $models = $models->keyBy(function ($model) use ($fields) {
             return array_to_key($model->only($fields));
         });
 
-        $errorFields = join(', ', array_map(function ($alias) use ($customAttributes) {
-            return $customAttributes[$alias] ?? $alias;
-        }, array_keys($fields)));
-
         // 获取数据不存在的错误行
         foreach ($lines as [$line, $key, $row]) {
-            [$ok, $message] = $this->checkExists($models, $key, $row, $message);
+            [$ok, $errMsg] = $this->checkExists($models, $key, $row, $errMsg);
 
-            if ($ok) {
-                continue;
+            if (!$ok) {
+                $this->addError($line, "{$errField} {$errMsg}");
             }
-
-            if (empty($errorRows[$line])) {
-                $errorRows[$line] = [];
-            }
-
-            $errorRows[$line][] = "原表第{$line}行: {$errorFields} {$message}";
         }
-
-        return $errorRows;
     }
 
     /**
@@ -94,14 +81,14 @@ class Exists extends ValidateModels
      * @param $models
      * @param $key
      * @param $row
-     * @param $message
+     * @param $errMsg
      * 
      * @return array
      */
-    protected function checkExists($models, $key, $row, $message)
+    protected function checkExists($models, $key, $row, $errMsg)
     {
         return $models->has($key)
             ? [true, null]
-            : [false, $message];
+            : [false, $errMsg];
     }
 }

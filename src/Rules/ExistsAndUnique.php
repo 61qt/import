@@ -2,11 +2,16 @@
 
 namespace QT\Import\Rules;
 
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Query\Builder as BaseBuilder;
+
 /**
- * 检查导入数据再数据库中是否存在,如果不存在就抛出错误
+ * 根据单行中特定的字段检查是否存在
+ * 如果存在并且有多条,再根据另外的字段进行第二次匹配
  * 
  * Class ExistsAndUnique
- * @package QT\Import\Rules
+ * @package App\Tasks\Import\Rules
  * 
  * 参数说明:
  * 
@@ -28,7 +33,7 @@ namespace QT\Import\Rules;
  *     数据重复时抛出的错误信息
  * 
  * eq: 
- * 根据名称检查用户是否存在,如果存在多条,再用身份证进行检查是否具体身份证下的用户是否存在
+ * 根据名称检查用户是否存在,如果有多条,再根据身份证检查进行精准匹配
  * new ExistsAndUnique(
  *     User::query(), 
  *     ['name'], 
@@ -36,19 +41,29 @@ namespace QT\Import\Rules;
  *     ['department_id' => 123],
  *     ['id'],
  *     ['excel内字段名' => '数据库中字段名'],
- *     ['id_number' => '身份证不存在', 'email' => '邮箱不存在']
+ *     '数据不存在时抛出的错误信息',
+ *     '数据重复时抛出的错误信息'
  * )
  */
 class ExistsAndUnique extends ValidateModels
 {
+    /**
+     * @var array
+     */
     protected $allowNullFields = [];
 
+    /**
+     * @var string
+     */
     protected $notFoundMessage = '不存在的数据';
 
+    /**
+     * @var string
+     */
     protected $notUniqueMessage = '相同的数据';
 
     /**
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param Builder|BaseBuilder $query
      * @param array $attributes
      * @param array $allowNullFields
      * @param array $wheres
@@ -58,47 +73,34 @@ class ExistsAndUnique extends ValidateModels
      * @param string $notUniqueMessage
      */
     public function __construct(
-        $query,
+        Builder | BaseBuilder $query,
         array $attributes,
         array $allowNullFields = [],
         array $wheres = [],
         array $ignoreFields = [],
         array $aliases = [],
-        string $notFoundMessage = null,
-        string $notUniqueMessage = null
+        ?string $notFoundMessage = null,
+        ?string $notUniqueMessage = null
     ) {
         parent::__construct($query, $attributes, $wheres, $ignoreFields, $aliases);
-
-        $this->notFoundMessage  = $notFoundMessage ?: $this->notFoundMessage;
-        $this->notUniqueMessage = $notUniqueMessage ?: $this->notUniqueMessage;
 
         foreach ($allowNullFields as $field) {
             $this->allowNullFields[$field] = $this->aliases[$field] ?? $field;
         }
-    }
 
-    /**
-     * 生成where条件,并返回where条件对应的行号
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param array $rows
-     * @param array $fields
-     */
-    protected function buildSql($query, $rows, $fields)
-    {
-        [$query, $lines] = parent::buildSql($query, $rows, $fields);
-
-        return [$query->addSelect($this->allowNullFields), $lines];
+        $this->select           = array_values($this->allowNullFields);
+        $this->notFoundMessage  = $notFoundMessage ?: $this->notFoundMessage;
+        $this->notUniqueMessage = $notUniqueMessage ?: $this->notUniqueMessage;
     }
 
     /**
      * 根据行内指定的字段进行筛选
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param Builder|BaseBuilder $query
+     * @param array $fields
      * @param array $rows
-     * @param string $field
      */
-    protected function buildConditions($query, $fields, $row)
+    protected function buildConditions(Builder | BaseBuilder $query, array $fields, array $row)
     {
         foreach ($fields as $alias => $field) {
             $query->where($field, $row[$alias]);
@@ -114,21 +116,18 @@ class ExistsAndUnique extends ValidateModels
     /**
      * 检查数据是否不存在
      *
-     * @param $models
-     * @param $lines
-     * @param $fields
-     * @param $errorRows
-     * @param $message
-     * 
-     * @return array
+     * @param Collection $models
+     * @param array $lines
+     * @param array $fields
+     * @param string $errField
+     * @param string $errMsg
      */
     protected function validateModels(
-        $models,
-        $lines,
-        $fields,
-        $customAttributes,
-        $errorRows,
-        $message
+        Collection $models,
+        array $lines,
+        array $fields,
+        string $errField,
+        string $errMsg
     ) {
         $groups = $models->groupBy(function ($model) use ($fields) {
             return array_to_key($model->only($fields));
@@ -136,20 +135,12 @@ class ExistsAndUnique extends ValidateModels
 
         // 获取数据不存在的错误行
         foreach ($lines as [$line, $key, $row]) {
-            [$ok, $error] = $this->checkGroup($groups, $key, $row);
+            [$ok, $errMsg] = $this->checkGroup($groups, $key, $row);
 
-            if ($ok) {
-                continue;
+            if (!$ok) {
+                $this->addError($line, "{$errField} {$errMsg}");
             }
-
-            if (empty($errorRows[$line])) {
-                $errorRows[$line] = [];
-            }
-
-            $errorRows[$line][] = "原表第{$line}行: {$error}";
         }
-
-        return $errorRows;
     }
 
     /**

@@ -2,6 +2,9 @@
 
 namespace QT\Import\Rules;
 
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as BaseBuilder;
+
 /**
  * 检查导入数据再db中是否唯一,如果不唯一抛出错误
  *
@@ -44,16 +47,7 @@ class UniqueIgnoreFieldNull extends Unique
     protected $ignoreFieldsNull = [];
 
     /**
-     * 根据指定字段去database中获取数据,通过检查数据库数据判断导入数据是否可用
-     *
-     * new ValidateModels(
-     *     Model::query(),
-     *     ['id', 'email', ['id_number', 'user_type']],
-     *     ['user_type' => 7],
-     *     ['id']
-     * )
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param Builder|BaseBuilder $query
      * @param array $attributes
      * @param array $wheres
      * @param array $ignoreFieldsNull ['id_number' => true, 'phone' => false]
@@ -61,7 +55,7 @@ class UniqueIgnoreFieldNull extends Unique
      * @param array $messages
      */
     public function __construct(
-        $query,
+        Builder | BaseBuilder $query,
         array $attributes,
         array $wheres = [],
         array $ignoreFieldsNull = [],
@@ -83,13 +77,13 @@ class UniqueIgnoreFieldNull extends Unique
     /**
      * 生成需要忽略记录的筛选条件
      *
-     * @param \Illuminate\Database\Eloquent\Builder $baseQuery
+     * @param Builder|BaseBuilder $query
      * @param array $rows
      */
-    protected function buildIgnoreConditions($baseQuery, $row)
+    protected function buildIgnoreConditions(Builder | BaseBuilder $query, array $row)
     {
         foreach ($this->ignoreFieldsNull as $field => $bool) {
-            $baseQuery->where(function ($query) use ($row, $field, $bool) {
+            $query->where(function ($query) use ($row, $field, $bool) {
                 $query->where($field, '!=', $row[$field]);
 
                 if ($bool) {

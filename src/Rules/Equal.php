@@ -5,8 +5,10 @@ namespace QT\Import\Rules;
 use RuntimeException;
 use Illuminate\Support\Arr;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
@@ -56,21 +58,21 @@ class Equal extends ValidateModels
     protected $equalFields = [];
 
     /**
-     * @param Builder $query
+     * @param Builder|BaseBuilder $query
      * @param array $attributes
      * @param array $wheres
      * @param array $equalFields
      * @param array $messages
      */
     public function __construct(
-        Builder $query,
+        Builder | BaseBuilder $query,
         array $attributes,
         array $wheres = [],
         array $equalFields = [],
         array $messages = []
     ) {
-        $model = $query instanceof Builder 
-            ? $query->getModel() 
+        $model = $query instanceof Builder
+            ? $query->getModel()
             : null;
 
         // 检查有没有关联字段
@@ -96,7 +98,7 @@ class Equal extends ValidateModels
 
             $this->select[] = $this->getWithKeyName($model->{$relation}());
         }
-    
+
         parent::__construct($query, $attributes, $wheres, [], [], $messages);
     }
 
@@ -125,21 +127,18 @@ class Equal extends ValidateModels
     /**
      * 检查数据是否与数据库的值相等
      *
-     * @param $models
-     * @param $lines
-     * @param $fields
-     * @param $errorRows
-     * @param $message
-     *
-     * @return array
+     * @param Collection $models
+     * @param array $lines
+     * @param array $fields
+     * @param string $errField
+     * @param string $errMsg
      */
     protected function validateModels(
-        $models,
-        $lines,
-        $fields,
-        $customAttributes,
-        $errorRows,
-        $message
+        Collection $models,
+        array $lines,
+        array $fields,
+        string $errField,
+        string $errMsg
     ) {
         $models = $models->keyBy(function ($model) use ($fields) {
             return array_to_key($model->only($fields));
@@ -147,29 +146,41 @@ class Equal extends ValidateModels
 
         // excel表导入名 => 在database中的字段名
         foreach ($this->equalFields as [$alias, $field]) {
+            $errField = $this->getFieldDisplayName($alias);
+
             // 验证数据是否与db中一致
             foreach ($lines as [$line, $key, $row]) {
-                // 如果数据库中没有不做检查
-                if (!$models->has($key)) {
-                    continue;
+                [$ok, $errMsg] = $this->checkEqual($models, $key, $row, $alias, $field, $errMsg);
+
+                if (!$ok) {
+                    $this->addError($line, "{$errField} {$errMsg}");
                 }
-
-                if (Arr::get($models->get($key), $field) == $row[$alias]) {
-                    continue;
-                }
-
-                if (empty($errorRows[$line])) {
-                    $errorRows[$line] = [];
-                }
-
-                $errorFields = $customAttributes[$alias] ?? $alias;
-
-                $errorRows[$line][] = sprintf(
-                    '原表第%s行: %s %s', $line, $errorFields, $message
-                );
             }
         }
+    }
 
-        return $errorRows;
+    /**
+     * 检查数据是否相同
+     *
+     * @param \Illuminate\Database\Eloquent\Collection $models
+     * @param string $key
+     * @param array $row
+     * @param string $alias 在row中的字段名
+     * @param string $field 在model中的字段名
+     * @param string $errMsg
+     *
+     * @return array
+     */
+    protected function checkEqual($models, $key, $row, $alias, $field, $errMsg)
+    {
+        // 如果数据库中没有不做检查
+        if (!$models->has($key)) {
+            return [true, null];
+        }
+
+        // 转换为数组,防止Arr::get()时通过访问属性直接拿到model的关联
+        return Arr::get($models->get($key)->toArray(), $field) == $row[$alias]
+            ? [true, null]
+            : [false, $errMsg];
     }
 }
