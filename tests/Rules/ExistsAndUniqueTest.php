@@ -46,7 +46,7 @@ class ExistsAndUniqueTest extends ValidateModelsTestCase
 
         $this->assertFalse($rule->validate([['name' => 'foo']]));
         $this->assertCount(1, $rule->errors());
-        $this->assertEquals([0 => '原表第0行: 未匹配到相同的名称'], $rule->errors()[0]);
+        $this->assertEquals([0 => '原表第0行: name 未匹配到相同的名称'], $rule->errors()[0]);
     }
 
     /**
@@ -65,7 +65,7 @@ class ExistsAndUniqueTest extends ValidateModelsTestCase
 
         $this->assertFalse($rule->validate([['name' => 'foo']]));
         $this->assertCount(1, $rule->errors());
-        $this->assertEquals([0 => '原表第0行: 匹配到有多条名称一致的记录'], $rule->errors()[0]);
+        $this->assertEquals([0 => '原表第0行: name 匹配到有多条名称一致的记录'], $rule->errors()[0]);
     }
 
     /**
@@ -102,7 +102,7 @@ class ExistsAndUniqueTest extends ValidateModelsTestCase
 
         $this->assertFalse($rule->validate([['name' => 'foo', 'id' => 3]]));
         $this->assertCount(1, $rule->errors());
-        $this->assertEquals([0 => '原表第0行: 未匹配到相同的名称'], $rule->errors()[0]);
+        $this->assertEquals([0 => '原表第0行: name 未匹配到相同的名称'], $rule->errors()[0]);
     }
 
     /**
@@ -121,6 +121,6 @@ class ExistsAndUniqueTest extends ValidateModelsTestCase
 
         $this->assertFalse($rule->validate([['name' => 'foo', 'id' => 2]]));
         $this->assertCount(1, $rule->errors());
-        $this->assertEquals([0 => '原表第0行: 匹配到有多条名称与id完全一致的记录'], $rule->errors()[0]);
+        $this->assertEquals([0 => '原表第0行: name 匹配到有多条名称与id完全一致的记录'], $rule->errors()[0]);
     }
 }

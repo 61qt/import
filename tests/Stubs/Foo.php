@@ -16,6 +16,8 @@ class Foo extends Model
 
     public $timestamps = false;
 
+    public static $snakeAttributes = false;
+
     public function belongsToBar()
     {
         return $this->belongsTo(Bar::class);

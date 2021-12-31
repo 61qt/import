@@ -10,22 +10,23 @@ use Illuminate\Database\Eloquent\Collection;
 
 class EqualTest extends ValidateModelsTestCase
 {
-    // /**
-    //  * @return void
-    //  */
-    // public function testNotEloquentBuilder()
-    // {
-    //     $query = $this->mockConnection()->query();
+    /**
+     * @return void
+     */
+    public function testNotEloquentBuilder()
+    {
+        $query = $this->mockConnection()->query();
 
-    //     $query->method('get')->willReturn(new Collection([
-    //         new Foo(['id' => 1, 'name' => 'foo']),
-    //     ]));
+        $query->method('get')->willReturn(new Collection([
+            new Foo(['id' => 1, 'name' => 'foo']),
+        ]));
 
-    //     $rule = new Equal($query, ['id'], [], ['name']);
-    //     $rule->validate([['id' => 1, 'name' => 'foo']]);
+        $rule = new Equal($query, ['id'], [], ['bar_name' => 'hasOneBar.name']);
 
-    //     $this->assertEmpty($rule->errors());
-    // }
+        $this->assertFalse($rule->validate([['id' => 1, 'bar_name' => 'foo']]));
+        $this->assertCount(1, $rule->errors());
+        $this->assertEquals([0 => '原表第0行: bar_name 与系统已存在数据不一致,请重新填写'], $rule->errors()[0]);
+    }
 
     /**
      * @return string

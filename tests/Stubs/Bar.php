@@ -13,4 +13,6 @@ class Bar extends Model
     protected $guarded = [];
 
     public $timestamps = false;
+
+    public static $snakeAttributes = false;
 }

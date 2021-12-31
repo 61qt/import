@@ -54,19 +54,9 @@ abstract class ValidateModelsTestCase extends BaseTestCase
             ->setConstructorArgs([$model->toBase()])
             ->getMock();
 
-        $whereCallback = function (...$args) use ($query) {
-            // 触发回调函数
-            $func = fn($arg) => $arg instanceof Closure && $arg($query);
-
-            return tap($query, fn() => array_walk($args, $func));
-        };
-
-        $query->method('__call')->willReturn($query);
         $query->method('getModel')->willReturn($model);
-        $query->method('where')->willReturnCallback($whereCallback);
-        $query->method('orWhere')->willReturnCallback($whereCallback);
 
-        return $query;
+        return tap($query, fn() => $this->mockQueryBuilderBaseMethod($query));
     }
 
     /**
@@ -100,8 +90,33 @@ abstract class ValidateModelsTestCase extends BaseTestCase
      */
     protected function mockQueryBuilder($connection, $grammar, $processor)
     {
-        return $this->getMockBuilder(QueryBuilder::class)
+        $query = $this->getMockBuilder(QueryBuilder::class)
             ->setConstructorArgs([$connection, $grammar, $processor])
             ->getMock();
+
+        $query->method('select')->willReturnSelf();
+
+        return tap($query, fn() => $this->mockQueryBuilderBaseMethod($query));
+    }
+
+    /**
+     * @param \PHPUnit\Framework\MockObject\MockObject $query
+     * @return \PHPUnit\Framework\MockObject\MockObject
+     */
+    private function mockQueryBuilderBaseMethod($query)
+    {
+        $whereCallback = function (...$args) use ($query) {
+            // 触发回调函数
+            $func = fn($arg) => $arg instanceof Closure && $arg($query);
+
+            return tap($query, fn() => array_walk($args, $func));
+        };
+
+        $query->method('clone')->willReturnSelf();
+        $query->method('__call')->willReturnSelf();
+        $query->method('where')->willReturnCallback($whereCallback);
+        $query->method('orWhere')->willReturnCallback($whereCallback);
+
+        return $query;
     }
 }
