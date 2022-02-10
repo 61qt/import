@@ -56,6 +56,23 @@ class EqualTest extends ValidateModelsTestCase
     /**
      * @return void
      */
+    public function testIndexFieldAndEqualFieldIsEmpty()
+    {
+        $query = $this->mockModelQueryBuilder(Foo::class);
+
+        $query->method('get')->willReturn(new Collection([
+            new Foo(['id' => 1, 'name' => 'foo']),
+        ]));
+
+        $rule = new Equal($query, ['id'], [], ['name']);
+
+        $this->assertTrue($rule->validate([['id' => '', 'name' => '']]));
+        $this->assertEmpty($rule->errors());
+    }
+
+    /**
+     * @return void
+     */
     public function testNotEqual()
     {
         $query = $this->mockModelQueryBuilder(Foo::class);
