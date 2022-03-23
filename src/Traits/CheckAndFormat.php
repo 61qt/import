@@ -215,7 +215,7 @@ trait CheckAndFormat
             }
 
             $index = array_search($field, $fields);
-            $pos   = $this->getSheetPos($index + 1, $line);
+            $pos   = $this->getSheetPos($index, $line);
 
             $messages[] = "原表{$pos} 错误: {$message}";
         }
