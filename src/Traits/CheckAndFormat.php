@@ -208,12 +208,13 @@ trait CheckAndFormat
         }
 
         $messages = [];
+        $fields   = array_keys($this->fields);
         foreach ($errors as $field => $message) {
             if (is_array($message)) {
                 $message = join(',', $message);
             }
 
-            $index = array_search($field, $this->fields);
+            $index = array_search($field, $fields);
             $pos   = $this->getSheetPos($index + 1, $line);
 
             $messages[] = "原表{$pos} 错误: {$message}";
