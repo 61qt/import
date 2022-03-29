@@ -35,7 +35,7 @@ class Template implements ContractsTemplate
     protected $spreadsheet;
 
     /**
-     * @var int|string
+     * @var string
      */
     protected $importSheetIndex;
 
