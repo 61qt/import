@@ -3,11 +3,6 @@
 namespace QT\Import\Contracts;
 
 /**
- * 字典接口
- *
- * key为excel里填写的值
- * value是插入到数据库的值
- * 
  * Validatable
  * @package QT\Import\Contracts
  */
