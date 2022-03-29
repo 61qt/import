@@ -1,7 +1,7 @@
 <?php
 
 use QT\Import\Task;
-use Illuminate\Events\Dispatcher;
+use QT\Import\Handler;
 use Illuminate\Validation\Factory;
 use Illuminate\Translation\Translator;
 use Illuminate\Translation\ArrayLoader;
@@ -10,15 +10,6 @@ include "bootstrap.php";
 
 class UserImport extends Task
 {
-    protected $fields = [
-        'username'  => '账户名称',
-        'user_type' => '用户类型',
-        'password'  => '登陆密码',
-        'name'      => '姓名',
-        'phone'     => '手机号',
-        'email'     => '邮箱地址',
-    ];
-
     protected $rules = [
         'username'  => 'required|string|min:6|max:12',
         'user_type' => 'required',
@@ -32,13 +23,49 @@ class UserImport extends Task
         'phone' => '手机号码不限制',
     ];
 
+    protected $optional = [
+        'user_type',
+    ];
+
     protected $messages = [
         'username.required' => '账户名称必填',
     ];
 
+    public function getFields(): array
+    {
+        return [
+            'username'  => '账户名称',
+            'user_type' => '用户类型',
+            'password'  => '登陆密码',
+            'name'      => '姓名',
+            'phone'     => '手机号',
+            'email'     => '邮箱地址',
+        ];
+    }
+
     protected function insertDB()
     {
-        var_dump($this->rows);
+        // do something
+    }
+
+    public function beforeImport(array $options)
+    {
+        // 检查输入数据是否正确
+    }
+
+    public function afterImport(array $successful, array $fail)
+    {
+        var_dump($successful, $fail);
+    }
+
+    public function onReport(int $count)
+    {
+        // 上报进度
+    }
+
+    public function onFailed(Throwable $exception)
+    {
+        // 处理错误
     }
 }
 
@@ -47,8 +74,6 @@ $path = __DIR__ . '/user.xlsx';
 $task = new UserImport;
 // 设置校验器（如果Ioc容器内有,会自动从容器中获取）
 $task->setValidationFactory(new Factory(new Translator(new ArrayLoader, 'cn')));
-// 设置事件触发器
-$task->setEventDispatcher(new Dispatcher());
 // 设置字典
 $task->setDictionary('user_type', new Dict([
     '超级用户' => 1,
@@ -56,32 +81,30 @@ $task->setDictionary('user_type', new Dict([
     '普通用户' => 3,
 ]));
 
-$task->complete(function (int $success, array $errors) {
-    echo "导入成功{$success}条";
-    // Handler errors
-});
-
-$task->failed(function (Throwable $e) {
-    var_dump($e);
-});
-
-$task->progress(function (int $count) {
-    var_dump($count);
-});
-
 // 生成导入模板
 $template = $task->getImportTemplate();
-$template->generateColumns();
-$template->setOptionalColumns($task->getDictionaries());
-$template->fillSimpleData([[
-    'username'  => 'rayson',
-    'user_type' => '超级用户',
-    'password'  => '123456',
-    'name'      => 'rayson',
-    'phone'     => '13012345678',
-    'email'     => 'example@example.com',
-]]);
+$template->fillSimpleData([
+    // 正确数据
+    [
+        'username'  => 'rayson',
+        'user_type' => '超级用户',
+        'password'  => '123456',
+        'name'      => 'rayson',
+        'phone'     => '13012345678',
+        'email'     => 'example@example.com',
+    ],
+    // 错误数据
+    [
+        'username'  => 'rayson2',
+        'user_type' => '错误类型',
+        'password'  => '123456',
+        'name'      => 'rayson',
+        'phone'     => '13012345678',
+        'email'     => 'example@example.com',
+    ],
+]);
 
 $template->save($path);
 
-$task->handle($path);
+$handler = new Handler;
+$handler->import($task, $path);
