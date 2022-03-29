@@ -56,7 +56,7 @@ trait CheckTableDuplicated
     /**
      * @param $data
      * @param $line
-     * @return int 冲突行号
+     * @throws ValidationException
      */
     public function checkTableDuplicated($data, $line)
     {
@@ -92,6 +92,11 @@ trait CheckTableDuplicated
         }
     }
 
+    /**
+     * @param array $data
+     * @param array $fields
+     * @return array
+     */
     protected function getAndCheckValues($data, $fields)
     {
         $values = [];

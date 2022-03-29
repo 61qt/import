@@ -25,7 +25,7 @@ interface Validatable
     /**
      * 获取错误行
      *
-     * @return bool
+     * @return array
      */
     public function errors(): array;
 }
