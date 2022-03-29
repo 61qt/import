@@ -5,7 +5,7 @@ namespace QT\Import;
 use Throwable;
 use RuntimeException;
 use QT\Import\Traits\Events;
-use QT\Import\Traits\ParseXlsx;
+use QT\Import\Traits\WithTemplate;
 use Illuminate\Database\Connection;
 use QT\Import\Traits\RowsValidator;
 use QT\Import\Traits\CheckAndFormat;
@@ -22,7 +22,7 @@ use QT\Import\Exceptions\ValidationException;
 abstract class Task
 {
     use Events;
-    use ParseXlsx;
+    use WithTemplate;
     use RowsValidator;
     use CheckAndFormat;
     use CheckTableDuplicated;
@@ -32,7 +32,7 @@ abstract class Task
      *
      * @var int
      */
-    const MAX_CHARACTERS_PER_CELL = 32767;
+    public const MAX_CHARACTERS_PER_CELL = 32767;
 
     /**
      * 导入的主体model
@@ -42,32 +42,18 @@ abstract class Task
     protected $model;
 
     /**
-     * 允许导入字段 (需要配置)
-     *
-     * @var array
-     */
-    protected $fields = [];
-
-    /**
-     * 字段备注信息
-     *
-     * @var array
-     */
-    protected $remarks = [];
-
-    /**
-     * 下拉可选列
-     *
-     * @var array
-     */
-    protected $optional = [];
-
-    /**
      * 内存占用大小
      *
      * @var string
      */
     protected $memoryLimit = '512M';
+
+    /**
+     * 原始行数据
+     *
+     * @var array
+     */
+    protected $originalRows = [];
 
     /**
      * 待插入行
@@ -79,9 +65,25 @@ abstract class Task
     /**
      * 错误行
      *
-     * @var array
+     * @var array<ImportError>
      */
     protected $errors = [];
+
+    /**
+     * 是否捕获行错误
+     * 可以在同步导入时直接抛出错误不执行后续逻辑
+     * 异步任务执行时请开启该标识,防止异常中断任务
+     *
+     * @var bool
+     */
+    protected $catch = true;
+
+    /**
+     * 是否启用事务
+     *
+     * @var bool
+     */
+    protected $useTransaction = true;
 
     /**
      * 上次同步生成进度时间
@@ -98,26 +100,19 @@ abstract class Task
     protected $interval = 3;
 
     /**
-     * 是否捕获错误
+     * 获取导入字段
      *
-     * @var bool
+     * @return array
      */
-    protected $catch = true;
-
-    /**
-     * 是否启用事务
-     *
-     * @var bool
-     */
-    protected $useTransaction = true;
+    abstract public function getFields(): array;
 
     /**
      * 开始处理异步导入任务
      *
-     * @param string $filename
+     * @param iterable $rows
      * @param array $options
      */
-    public function handle(string $filename, array $options = [])
+    public function handle(iterable $rows, array $options = [])
     {
         ini_set('memory_limit', $this->memoryLimit);
 
@@ -129,71 +124,61 @@ abstract class Task
         }
 
         try {
-            // 支持在任务开始前对option内容进行检查处理
-            if (method_exists($this, 'beforeImport')) {
-                $this->beforeImport($options);
-            }
+            // 任务开始前对option内容进行检查处理
+            $this->beforeImport($options);
             // 初始化错误信息
             $this->bootDictErrorMessages();
             $this->bootCheckTableDuplicated();
-            // 处理excel文件
-            $this->processFile($filename);
-            // 从excel中提取的数据进行批量处理
-            $this->checkAndFormatRows();
+            // 处理行内容
+            $this->processRows($rows);
             // 插入到db
             if (empty($connection) || !$this->useTransaction) {
                 $this->insertDB();
             } else {
-                $connection->transaction(fn() => $this->insertDB());
+                $connection->transaction(fn () => $this->insertDB());
             }
             // 触发任务完成事件
-            $this->fireEvent('complete', count($this->rows), $this->errors);
+            $this->afterImport($this->rows, $this->errors);
         } catch (Throwable $e) {
-            // 防止没有监听事件时无法获取错误信息
-            if (empty($this->getEventDispatcher())) {
-                throw $e;
-            }
-
-            $this->fireEvent('failed', $e);
+            $this->onFailed($e);
         }
     }
 
     /**
      * 处理上传文件
      *
-     * @param string $filename
+     * @param iterable $rows
      */
-    protected function processFile(string $filename)
+    protected function processRows(iterable $rows)
     {
-        $this->reportAt = time();
+        foreach ($rows as $line => $row) {
+            // 整行都是空的就忽略
+            if (empty($row)) {
+                continue;
+            }
 
-        foreach ($this->praseFile($filename) as [$row, $line]) {
             try {
-                $row = $this->checkAndFormatRow($row, $line);
+                $data = $this->checkAndFormatRow($row, $line);
 
-                if (empty($row)) {
+                if (empty($data)) {
                     continue;
                 }
 
                 $this->rows[$line] = $row;
+                // 冗余原始行数据
+                $this->originalRows[$line] = $row;
             } catch (Throwable $e) {
                 if (!$this->catch) {
                     throw $e;
                 }
 
                 // 整合错误信息文档
-                $this->errors[$line] = new ImportError($this->originalRows[$line], $line, $e);
-                // 错误行不保留原始数据
-                unset($this->originalRows[$line]);
-            }
-
-            // 每隔一段时间上报当前进度
-            if (time() > $this->reportAt + $this->interval) {
-                $this->reportAt = time();
-
-                $this->fireEvent('progress', $line);
+                $this->errors[$line] = new ImportError($row, $line, $e);
             }
         }
+
+        // 从excel中提取的数据进行批量处理
+        $this->checkAndFormatRows();
     }
 
     /**
@@ -239,12 +224,12 @@ abstract class Task
     protected function checkAndFormatRows()
     {
         // 批量进行唯一索引检查,防止唯一索引冲突
-        foreach ($this->validateRows($this->rows) as $line => $errorMessages) {
+        foreach ($this->validateRows($this->rows) as $line => $errMsg) {
             $row = $this->originalRows[$line];
 
             $this->errors[$line] = new ImportError(
-                $row, $line, new ValidationException(join('; ', $errorMessages))
-            );
+                $row, $line, new ValidationException(join('; ', $errMsg)
+            ));
 
             unset($this->rows[$line]);
         }
@@ -260,50 +245,5 @@ abstract class Task
      */
     protected function insertDB()
     {
-
-    }
-
-    /**
-     * 获取导入列配置信息与选项
-     *
-     * @param array $input
-     * @return array
-     */
-    public function getColumnsOptions()
-    {
-        return [$this->fields, $this->rules, $this->remarks];
-    }
-
-    /**
-     * 获取导入模板
-     *
-     * @param array $input
-     * @return Template
-     */
-    public function getImportTemplate(array $input = []): Template
-    {
-        return new Template(...$this->getColumnsOptions());
-    }
-
-    /**
-     * 获取可选列
-     *
-     * @param array $input
-     * @return array<string, \QT\Import\Contracts\Dictionary>
-     */
-    public function getOptionalColumns(array $input = []): array
-    {
-        $optional = [];
-        foreach ($this->optional as $field) {
-            $dictionary = $this->getDictionary($field);
-
-            if ($dictionary === null) {
-                continue;
-            }
-
-            $optional[$field] = $dictionary;
-        }
-
-        return $optional;
     }
 }

@@ -2,109 +2,51 @@
 
 namespace QT\Import\Traits;
 
-use Illuminate\Contracts\Events\Dispatcher;
+use Throwable;
 
 trait Events
 {
     /**
-     * 事件触发器.
+     * 导入开始前触发
      *
-     * @var \Illuminate\Contracts\Events\Dispatcher
+     * @param array $options
      */
-    protected $dispatcher;
+    public function beforeImport(array $options)
+    {
+        // do something
+    }
 
     /**
-     * 监听批量导入完成事件
+     * 导入完成时触发
      *
-     * @param  \Closure|string  $callback
+     * @param  array $successful 导入成功行
+     * @param  array $failed     导入失败行
      * @return void
      */
-    public function complete($callback)
+    public function afterImport(array $successful, array $fail)
     {
-        $this->registerModelEvent('complete', $callback);
+        // do something
     }
 
     /**
-     * 监听批量导入执行失败事件
+     * 导入时触发
      *
-     * @param  \Closure|string  $callback
+     * @param  int $count
      * @return void
      */
-    public function failed($callback)
+    public function onReport(int $count)
     {
-        $this->registerModelEvent('failed', $callback);
+        // do something
     }
 
     /**
-     * 监听批量导入进度更新事件
+     * 导入执行失败时触发
      *
-     * @param  \Closure|string  $callback
+     * @param  Throwable $exception
      * @return void
      */
-    public function progress($callback)
+    public function onFailed(Throwable $exception)
     {
-        $this->registerModelEvent('progress', $callback);
-    }
-
-    /**
-     * 注册事件监听者到调度器.
-     *
-     * @param  string  $event
-     * @param  \Closure|string  $callback
-     * @return void
-     */
-    protected function registerModelEvent($event, $callback)
-    {
-        if (isset($this->dispatcher)) {
-            $name = static::class;
-
-            $this->dispatcher->listen("qt.{$event}:{$name}", $callback);
-        }
-    }
-
-    /**
-     * 释放事件
-     *
-     * @param  string  $event
-     * @return mixed
-     */
-    protected function fireEvent($event, ...$params)
-    {
-        if (!isset($this->dispatcher)) {
-            return true;
-        }
-
-        return $this->dispatcher->dispatch("qt.{$event}:" . static::class, $params);
-    }
-
-    /**
-     * Get the event dispatcher instance.
-     *
-     * @return \Illuminate\Contracts\Events\Dispatcher
-     */
-    public function getEventDispatcher()
-    {
-        return $this->dispatcher;
-    }
-
-    /**
-     * Set the event dispatcher instance.
-     *
-     * @param  \Illuminate\Contracts\Events\Dispatcher  $dispatcher
-     * @return void
-     */
-    public function setEventDispatcher(Dispatcher $dispatcher)
-    {
-        $this->dispatcher = $dispatcher;
-    }
-
-    /**
-     * Unset the event dispatcher for models.
-     *
-     * @return void
-     */
-    public function unsetEventDispatcher()
-    {
-        $this->dispatcher = null;
+        throw $exception;
     }
 }
