@@ -164,7 +164,7 @@ abstract class Task
                     continue;
                 }
 
-                $this->rows[$line] = $row;
+                $this->rows[$line] = $data;
                 // 冗余原始行数据
                 $this->originalRows[$line] = $row;
             } catch (Throwable $e) {

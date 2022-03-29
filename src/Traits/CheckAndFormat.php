@@ -73,6 +73,8 @@ trait CheckAndFormat
      */
     protected function bootDictErrorMessages()
     {
+        $fields = $this->getFields();
+
         foreach ($this->dictionaries as $field => $dict) {
             if (!empty($this->dictErrorMessages[$field])) {
                 continue;
@@ -82,8 +84,8 @@ trait CheckAndFormat
             // 优先使用自定义的字段名,其次才是导入模板中的字段名
             if (isset($this->customAttributes[$field])) {
                 $column = $this->customAttributes[$field];
-            } elseif (isset($this->fields[$field])) {
-                $column = $this->fields[$field];
+            } elseif (isset($fields[$field])) {
+                $column = $fields[$field];
             } else {
                 $column = $field;
             }
@@ -208,7 +210,7 @@ trait CheckAndFormat
         }
 
         $messages = [];
-        $fields   = array_keys($this->fields);
+        $fields   = array_keys($this->getFields());
         foreach ($errors as $field => $message) {
             if (is_array($message)) {
                 $message = join(',', $message);
@@ -230,7 +232,7 @@ trait CheckAndFormat
      */
     protected function getCustomAttributes()
     {
-        return array_merge($this->fields, $this->customAttributes);
+        return array_merge($this->getFields(), $this->customAttributes);
     }
 
     /**
