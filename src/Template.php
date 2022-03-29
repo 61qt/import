@@ -17,6 +17,7 @@ use PhpOffice\PhpSpreadsheet\RichText\RichText;
 use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Illuminate\Validation\Concerns\ReplacesAttributes;
+use QT\Import\Contracts\Template as ContractsTemplate;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
 /**
@@ -24,7 +25,7 @@ use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
  *
  * @package QT\Import
  */
-class Template
+class Template implements ContractsTemplate
 {
     use ReplacesAttributes;
 
@@ -34,14 +35,19 @@ class Template
     protected $spreadsheet;
 
     /**
-     * @var int
+     * @var int|string
      */
-    protected $columnsSheetIndex;
+    protected $importSheetIndex;
 
     /**
      * @var string
      */
-    protected $dictSheetTitle = '枚举列可导入内容';
+    protected $importSheetTitle;
+
+    /**
+     * @var string
+     */
+    protected $dictSheetTitle;
 
     /**
      * 列名
@@ -72,6 +78,13 @@ class Template
     protected $dictionaries = [];
 
     /**
+     * 导入示例内容
+     *
+     * @var array
+     */
+    protected $example = [];
+
+    /**
      * 校验提示语
      *
      * @var array
@@ -84,11 +97,11 @@ class Template
             'Integer' => '最小为 :min',
             'String'  => '最短为 :min',
         ],
-        'Max'        => [
+        'Max' => [
             'Integer' => '最大为 :max',
             'String'  => '最长为 :max',
         ],
-        "Between"    => [
+        "Between" => [
             "Integer" => "数值范围 :min - :max 之间。",
             "Numeric" => "数值范围 :min - :max 之间。",
             "String"  => "必须介于 :min - :max 个字符之间。",
@@ -97,11 +110,11 @@ class Template
 
     protected $ruleStyles = [
         'Required' => [
-            'fill'    => [
+            'fill' => [
                 'fillType'   => Fill::FILL_SOLID,
                 'startColor' => ['argb' => Color::COLOR_RED],
             ],
-            'font'    => [
+            'font' => [
                 'color' => ['argb' => Color::COLOR_WHITE],
             ],
             'borders' => [
@@ -114,39 +127,124 @@ class Template
     ];
 
     /**
-     * @param array $column
+     * @param Spreadsheet $spreadsheet
      * @param array $rules
      * @param array $remarks
      */
     public function __construct(
-        array $columns,
+        Spreadsheet $spreadsheet,
         array $rules,
         array $remarks = []
     ) {
-        $this->spreadsheet = new Spreadsheet;
-        $this->columns     = $columns;
+        $this->spreadsheet = $spreadsheet;
         $this->rules       = $rules;
         $this->remarks     = $remarks;
     }
 
     /**
+     * 设置导入sheet
+     *
+     * @param int $index
+     * @param string|null $title
+     */
+    public function setImportSheet(int $index, string $title = null)
+    {
+        $this->importSheetIndex = $index;
+        $this->importSheetTitle = $title ?: '导入模板';
+    }
+
+    /**
+     * 设置导入列名
+     *
+     * @param array $columns
+     */
+    public function setFirstColumn(array $columns)
+    {
+        $this->columns = $columns;
+    }
+
+    /**
+     * 设置允许使用下拉选项的列
+     *
+     * @param array<string, Dictionary> $dictionaries
+     */
+    public function setOptionalColumns(array $dictionaries, $dictSheetTitle = null)
+    {
+        $this->dictionaries   = $dictionaries;
+        $this->dictSheetTitle = $dictSheetTitle ?: '枚举列可导入内容';
+    }
+
+    /**
+     * 在excel第三个sheet中生成示例(自动生成和模板一样的首行)
+     *
+     * @param array $example
+     */
+    public function setExampleSheet(array $example)
+    {
+        $this->example = $example;
+    }
+
+    /**
+     * 给导入模板填入基础数据
+     *
+     * @param Builder|iterable $source
+     * @param int $sheetIndex
+     * @param int $startColumn
+     * @param int $startRow
+     */
+    public function fillSimpleData(
+        $source,
+        int $sheetIndex = 0,
+        int $startColumn = 0,
+        int $startRow = 2
+    ) {
+        if ($source instanceof Builder || $source instanceof EloquentBuilder) {
+            $source = $source->cursor();
+        }
+
+        if (!is_iterable($source)) {
+            throw new RuntimeException('无效的数据源');
+        }
+
+        $sheet = $this->spreadsheet->getSheet($sheetIndex);
+        // 填充数据
+        $this->addStrictStringRows($sheet, $source, $startColumn, $startRow);
+    }
+
+    /**
+     * 将文件保存到指定位置
+     *
+     * @param string $filename
+     */
+    public function save(string $filename)
+    {
+        $this->generateColumns()
+            ->generateOptionalColumns()
+            ->generateExampleSheet();
+
+        $this->spreadsheet->setActiveSheetIndex($this->importSheetIndex);
+
+        $writer = IOFactory::createWriter($this->spreadsheet, 'Xlsx');
+
+        $writer->save($filename);
+    }
+
+    /**
      * 生成导入列
      *
-     * @param int $sheetIndex
+     * @return self
      */
-    public function generateColumns(int $sheetIndex = 0)
+    protected function generateColumns()
     {
-        if ($sheetIndex === 0) {
-            $sheet = $this->spreadsheet->getSheet($sheetIndex);
+        if ($this->importSheetIndex === 0) {
+            $sheet = $this->spreadsheet->getSheet($this->importSheetIndex);
         } else {
-            $sheet = $this->spreadsheet->createSheet($sheetIndex);
+            $sheet = $this->spreadsheet->createSheet($this->importSheetIndex);
         }
 
         $sheet->setTitle('导入模板');
         // 生成首行信息
         $this->generateFirstColumn($sheet);
-
-        $this->columnsSheetIndex = $sheetIndex;
 
         return $this;
     }
@@ -174,7 +272,7 @@ class Template
             $sheet->getCell("{$coordinate}1")->setValue($displayName);
             // 填写字段备注信息
             if (isset($this->remarks[$column])) {
-                $text = new RichText;
+                $text = new RichText();
                 $text->createText($this->remarks[$column]);
 
                 $sheet->getComment("{$coordinate}1")->setText($text);
@@ -223,7 +321,7 @@ class Template
                 $value = $params[0] ?? '';
 
                 if (method_exists($this, $replacer = "replace{$rule}")) {
-                    $suffix[] = $this->$replacer($comment, '', $rule, $params);
+                    $suffix[] = $this->{$replacer}($comment, '', $rule, $params);
                 } else {
                     $suffix[] = str_replace(":{$rule}", $value, $comment);
                 }
@@ -237,7 +335,7 @@ class Template
 
                 $value = $params[0] ?? '';
                 if (method_exists($this, $replacer = "replace{$rule}")) {
-                    $suffix[] = $this->$replacer($msg, '', $rule, $params);
+                    $suffix[] = $this->{$replacer}($msg, '', $rule, $params);
                 } else {
                     $suffix[] = str_replace(":{$rule}", $value, $msg);
                 }
@@ -248,63 +346,34 @@ class Template
     }
 
     /**
-     * 给导入模板填入基础数据
+     * 给对应的列生成下拉字典
      *
-     * @param Builder|iterable $source
-     * @param int $sheetIndex
-     * @param int $startColumn
-     * @param int $startRow
+     * @return self
      */
-    public function fillSimpleData(
-        $source,
-        int $sheetIndex = 0,
-        int $startColumn = 0,
-        int $startRow = 2
-    ) {
-        if ($source instanceof Builder || $source instanceof EloquentBuilder) {
-            $source = $source->cursor();
-        }
-
-        if (!is_iterable($source)) {
-            throw new RuntimeException('无效的数据源');
-        }
-
-        $sheet = $this->spreadsheet->getSheet($sheetIndex);
-        // 填充数据
-        $this->addStrictStringRows($sheet, $source, $startColumn, $startRow);
-    }
-
-    /**
-     * 设置允许使用下拉选项的列
-     *
-     * @param array<string, Dictionary> $dictionaries
-     */
-    public function setOptionalColumns(array $dictionaries, $dictSheetTitle = null)
+    protected function generateOptionalColumns()
     {
-        if (null === $this->columnsSheetIndex) {
+        if (null === $this->importSheetIndex) {
             throw new RuntimeException('只有在导入表头加载完成后才允许生成字典');
         }
-
-        $sheet = $this->spreadsheet->getSheet($this->columnsSheetIndex);
-        $title = $dictSheetTitle ?: $this->dictSheetTitle;
 
         $maxLine   = 0;
         $dictIndex = 0;
         $columns   = [];
+        $sheet     = $this->spreadsheet->getSheet($this->importSheetIndex);
         foreach (array_keys($this->columns) as $columnIndex => $column) {
-            if (empty($dictionaries[$column])) {
+            if (empty($this->dictionaries[$column])) {
                 continue;
             }
 
             $line             = 0;
             $columns[$column] = [];
-            foreach ($dictionaries[$column]->all() as $key => $value) {
+            foreach ($this->dictionaries[$column]->all() as $key => $value) {
                 $columns[$column][$line++] = $key;
             }
 
             $maxLine = max($maxLine, $line);
 
-            $validation = (new DataValidation)
+            $validation = (new DataValidation())
                 ->setType(DataValidation::TYPE_LIST)
                 ->setErrorStyle(DataValidation::STYLE_INFORMATION)
                 ->setAllowBlank(false)
@@ -314,7 +383,7 @@ class Template
                 ->setErrorTitle('输入错误')
                 ->setError("必须在可选的范围内")
                 ->setFormula1($this->getFormula(
-                    $title,
+                    $this->dictSheetTitle,
                     Coordinate::stringFromColumnIndex(++$dictIndex),
                     count($columns[$column]) + 1
                 ));
@@ -324,22 +393,9 @@ class Template
             $sheet->setDataValidation("{$column}2:{$column}200000", $validation);
         }
 
-        $this->generateDictSheet($columns, $maxLine, $title);
-    }
+        $this->generateDictSheet($columns, $maxLine, $this->dictSheetTitle);
 
-    /**
-     * @param string $column
-     * @param int $startLine
-     * @param int $endLine
-     * @return string
-     */
-    protected function getFormula($title, $column, $endLine)
-    {
-        return str_replace(
-            ['{title}', '{column}', '{endLine}'],
-            [$title, $column, $endLine],
-            '{title}!${column}$2:${column}${endLine}'
-        );
+        return $this;
     }
 
     /**
@@ -386,13 +442,11 @@ class Template
     }
 
     /**
-     * 在excel第三个sheet中生成示例(自动生成和模板一样的首行)
-     *
-     * @param array $templates
+     * @return self
      */
-    public function generateTemplateSheet(array $templates)
+    protected function generateExampleSheet()
     {
-        if (is_null($this->columnsSheetIndex)) {
+        if (null === $this->importSheetIndex) {
             throw new RuntimeException('只有在导入表头加载完成后才允许生成示例');
         }
 
@@ -405,21 +459,24 @@ class Template
         // 生成首行信息
         $this->generateFirstColumn($sheet);
         // 添加演示模板数据
-        $this->addStrictStringRows($sheet, $templates, 0, 2);
+        $this->addStrictStringRows($sheet, $this->example, 0, 2);
+
+        return $this;
     }
 
     /**
-     * 将文件保存到指定位置
-     *
-     * @param string $filename
+     * @param string $column
+     * @param int $startLine
+     * @param int $endLine
+     * @return string
      */
-    public function save(string $filename)
+    protected function getFormula($title, $column, $endLine)
     {
-        $this->spreadsheet->setActiveSheetIndex($this->columnsSheetIndex);
-
-        $writer = IOFactory::createWriter($this->spreadsheet, 'Xlsx');
-
-        $writer->save($filename);
+        return str_replace(
+            ['{title}', '{column}', '{endLine}'],
+            [$title, $column, $endLine],
+            '{title}!${column}$2:${column}${endLine}'
+        );
     }
 
     /**
