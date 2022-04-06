@@ -31,11 +31,6 @@ class Rows implements Iterator
     protected $fields;
 
     /**
-     * @var int $line
-     */
-    protected $line = 0;
-
-    /**
      * @var string
      */
     protected $fieldErrorMsg = '导入模板与系统提供的模板不一致，请重新导入';
@@ -74,8 +69,6 @@ class Rows implements Iterator
      */
     public function next(): void
     {
-        $this->line++;
-
         $this->rows->next();
     }
 
@@ -84,7 +77,7 @@ class Rows implements Iterator
      */
     public function key(): int
     {
-        return $this->line;
+        return $this->rows->key();
     }
 
     /**
@@ -98,11 +91,16 @@ class Rows implements Iterator
         // 组装row,保证row的内容与导入模板设置的字段匹配
         $result = [];
         foreach ($this->fields as $index => $field) {
-            $value = $row[$index] ?? '';
+            $value = '';
+            if (!empty($row[$index])) {
+                $value = $row[$index]->getValue();
 
-            if ($value !== '') {
-                $result[$field] = trim($value);
+                if (is_string($value)) {
+                    $value = trim($value);
+                }
             }
+
+            $result[$field] = $value;
         }
 
         return $result;
