@@ -164,11 +164,12 @@ class Template implements ContractsTemplate
      * 设置允许使用下拉选项的列
      *
      * @param array<string, Dictionary> $dictionaries
+     * @param string|null $title
      */
-    public function setOptionalColumns(array $dictionaries, $dictSheetTitle = null)
+    public function setOptionalColumns(array $dictionaries, string $title = null)
     {
         $this->dictionaries   = $dictionaries;
-        $this->dictSheetTitle = $dictSheetTitle ?: '枚举列可导入内容';
+        $this->dictSheetTitle = $title ?: '枚举列可导入内容';
     }
 
     /**

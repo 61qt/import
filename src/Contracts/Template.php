@@ -29,9 +29,9 @@ interface Template
      * 设置允许使用下拉选项的列
      *
      * @param array<string, Dictionary> $dictionaries
-     * @param string|null $dictSheetTitle
+     * @param string|null $title
      */
-    public function setOptionalColumns(array $dictionaries, $dictSheetTitle = null);
+    public function setOptionalColumns(array $dictionaries, string $title = null);
 
     /**
      * 在excel第三个sheet中生成示例(自动生成和模板一样的首行)
