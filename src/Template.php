@@ -239,7 +239,7 @@ class Template implements ContractsTemplate
             $sheet = $this->spreadsheet->createSheet($this->importSheetIndex);
         }
 
-        $sheet->setTitle('导入模板');
+        $sheet->setTitle($this->importSheetTitle);
         // 生成首行信息
         $this->generateFirstColumn($sheet);
 
