@@ -6,10 +6,7 @@ use RuntimeException;
 use QT\Import\Contracts\Dictionary;
 use Illuminate\Database\Query\Builder;
 use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Style\Color;
-use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use Illuminate\Validation\ValidationRuleParser;
@@ -89,42 +86,14 @@ class Template implements ContractsTemplate
      *
      * @var array
      */
-    protected $ruleMaps = [
-        'Required'   => '必填',
-        'Integer'    => '数字',
-        'Date'       => '格式为 年/月/日',
-        'Min'        => [
-            'Integer' => '最小为 :min',
-            'String'  => '最短为 :min',
-        ],
-        'Max' => [
-            'Integer' => '最大为 :max',
-            'String'  => '最长为 :max',
-        ],
-        "Between" => [
-            "Integer" => "数值范围 :min - :max 之间。",
-            "Numeric" => "数值范围 :min - :max 之间。",
-            "String"  => "必须介于 :min - :max 个字符之间。",
-        ],
-    ];
+    protected $ruleComments = [];
 
-    protected $ruleStyles = [
-        'Required' => [
-            'fill' => [
-                'fillType'   => Fill::FILL_SOLID,
-                'startColor' => ['argb' => Color::COLOR_RED],
-            ],
-            'font' => [
-                'color' => ['argb' => Color::COLOR_WHITE],
-            ],
-            'borders' => [
-                'outline' => [
-                    'borderStyle' => Border::BORDER_THIN,
-                    'color'       => ['argb' => Color::COLOR_BLACK],
-                ],
-            ],
-        ],
-    ];
+    /**
+     * 校验规则列样式
+     * 
+     * @var array
+     */
+    protected $ruleStyles = [];
 
     /**
      * @param Spreadsheet $spreadsheet
@@ -139,6 +108,34 @@ class Template implements ContractsTemplate
         $this->spreadsheet = $spreadsheet;
         $this->rules       = $rules;
         $this->remarks     = $remarks;
+    }
+
+    /**
+     * 设置校验规则列对应的提示语
+     * 
+     * @param string $rule
+     * @param array|string $comment
+     * @return self
+     */
+    public function setRuleComment($rule, $comment)
+    {
+        $this->ruleComments[$rule] = $comment;
+
+        return $this;
+    }
+
+    /**
+     * 设置校验规则列对应的样式
+     * 
+     * @param string $rule
+     * @param array $style
+     * @return self
+     */
+    public function setRuleStyle($rule, $style)
+    {
+        $this->ruleStyles[$rule] = $style;
+
+        return $this;
     }
 
     /**
@@ -311,11 +308,11 @@ class Template implements ContractsTemplate
 
         $suffix = [];
         foreach ($rules as $rule => $params) {
-            if (!array_key_exists($rule, $this->ruleMaps)) {
+            if (!array_key_exists($rule, $this->ruleComments)) {
                 continue;
             }
 
-            $comment = $this->ruleMaps[$rule];
+            $comment = $this->ruleComments[$rule];
 
             if (!is_array($comment)) {
                 $value = $params[0] ?? '';
