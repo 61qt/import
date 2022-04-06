@@ -13,8 +13,8 @@ use Illuminate\Validation\ValidationRuleParser;
 use PhpOffice\PhpSpreadsheet\RichText\RichText;
 use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use QT\Import\Contracts\Template as ContractTemplate;
 use Illuminate\Validation\Concerns\ReplacesAttributes;
-use QT\Import\Contracts\Template as ContractsTemplate;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
 /**
@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
  *
  * @package QT\Import
  */
-class Template implements ContractsTemplate
+class Template implements ContractTemplate
 {
     use ReplacesAttributes;
 
