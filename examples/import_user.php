@@ -2,6 +2,7 @@
 
 use QT\Import\Task;
 use QT\Import\Handler;
+use QT\Import\Dictionary;
 use Illuminate\Validation\Factory;
 use Illuminate\Translation\Translator;
 use Illuminate\Translation\ArrayLoader;
@@ -71,11 +72,11 @@ class UserImport extends Task
 
 $path = __DIR__ . '/user.xlsx';
 // 初始化导入任务
-$task = new UserImport;
+$task = new UserImport();
 // 设置校验器（如果Ioc容器内有,会自动从容器中获取）
-$task->setValidationFactory(new Factory(new Translator(new ArrayLoader, 'cn')));
+$task->setValidationFactory(new Factory(new Translator(new ArrayLoader(), 'cn')));
 // 设置字典
-$task->setDictionary('user_type', new Dict([
+$task->setDictionary('user_type', new Dictionary([
     '超级用户' => 1,
     '特殊用户' => 2,
     '普通用户' => 3,
@@ -106,5 +107,5 @@ $template->fillSimpleData([
 
 $template->save($path);
 
-$handler = new Handler;
+$handler = new Handler();
 $handler->import($task, $path);
