@@ -92,7 +92,7 @@ class Template implements ContractsTemplate
     protected $ruleMaps = [
         'Required'   => '必填',
         'Integer'    => '数字',
-        'DateFormat' => '格式为 :format',
+        'Date'       => '格式为 年/月/日',
         'Min'        => [
             'Integer' => '最小为 :min',
             'String'  => '最短为 :min',

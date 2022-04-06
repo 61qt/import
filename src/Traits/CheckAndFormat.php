@@ -2,6 +2,7 @@
 
 namespace QT\Import\Traits;
 
+use DateTime;
 use RuntimeException;
 use Illuminate\Container\Container;
 use QT\Import\Contracts\Dictionary;
@@ -39,6 +40,13 @@ trait CheckAndFormat
      * @var array
      */
     protected $customAttributes = [];
+
+    /**
+     * 日期格式
+     *
+     * @var string
+     */
+    protected $dateFormat = 'Y-m-d';
 
     /**
      * 是否使用默认值填充
@@ -179,6 +187,10 @@ trait CheckAndFormat
     protected function formatRow($data, $line)
     {
         foreach ($data as $field => $value) {
+            if ($value instanceof DateTime) {
+                $data[$field] = $value->format($this->dateFormat);
+            }
+
             // 过滤空值
             if ($value !== '') {
                 continue;
