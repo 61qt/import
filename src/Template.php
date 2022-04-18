@@ -440,12 +440,18 @@ class Template implements ContractTemplate
     }
 
     /**
+     * 生成示例sheet
+     * 
      * @return self
      */
     protected function generateExampleSheet()
     {
         if (null === $this->importSheetIndex) {
             throw new RuntimeException('只有在导入表头加载完成后才允许生成示例');
+        }
+
+        if (empty($this->example)) {
+            return $this;
         }
 
         // 获取导入用的sheet后一个sheet
