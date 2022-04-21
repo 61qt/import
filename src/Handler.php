@@ -4,9 +4,11 @@ namespace QT\Import;
 
 use Iterator;
 use Box\Spout\Common\Type;
+use Box\Spout\Reader\ReaderInterface;
 use QT\Import\Contracts\WithMultipleSheets;
 use QT\Import\Exceptions\SheetNotFoundException;
 use Box\Spout\Reader\Common\Creator\ReaderFactory;
+use Box\Spout\Common\Manager\OptionsManagerInterface;
 
 /**
  * Handler
@@ -16,6 +18,13 @@ use Box\Spout\Reader\Common\Creator\ReaderFactory;
 class Handler
 {
     /**
+     * @param array $readOptions
+     */
+    public function __construct(protected array $readOptions = [])
+    {
+    }
+
+    /**
      * 执行导入逻辑
      *
      * @param Task $task
@@ -24,7 +33,7 @@ class Handler
      */
     public function import(Task $task, string $filename, array $input = [])
     {
-        $reader = ReaderFactory::createFromType(Type::XLSX);
+        $reader = $this->getReader(Type::XLSX);
         $reader->open($filename);
 
         $sheets = $this->buildSheetTasks($reader->getSheetIterator(), $task);
@@ -32,6 +41,25 @@ class Handler
         foreach ($sheets as [$task, $rows]) {
             $task->handle($rows, $input);
         }
+    }
+
+    /**
+     * 获取文件读取器
+     *
+     * @param string $type
+     * @return ReaderInterface
+     */
+    public function getReader(string $type): ReaderInterface
+    {
+        $reader = ReaderFactory::createFromType($type);
+
+        if ($reader instanceof OptionsManagerInterface) {
+            foreach ($this->readOptions as $name => $value) {
+                $reader->setOption($name, $value);
+            }
+        }
+
+        return $reader;
     }
 
     /**
