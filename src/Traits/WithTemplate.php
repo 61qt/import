@@ -74,7 +74,7 @@ trait WithTemplate
     /**
      * 获取可导入模板文件
      *
-     * @param array $inpu
+     * @param array $input
      * @return Template
      */
     public function getImportTemplate(array $input = []): Template
