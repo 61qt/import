@@ -2,6 +2,7 @@
 
 namespace QT\Import\Exceptions;
 
+use DateTime;
 use Throwable;
 use RuntimeException;
 use Illuminate\Support\Arr;
@@ -13,8 +14,18 @@ use Illuminate\Database\Query\Expression;
  */
 class ImportError extends RuntimeException
 {
+    /**
+     * 错误行数据
+     *
+     * @var array
+     */
     protected $row;
 
+    /**
+     * 行号
+     *
+     * @var int
+     */
     protected $line;
 
     /**
@@ -32,23 +43,34 @@ class ImportError extends RuntimeException
 
     /**
      * 获取错误行内容
-     * 
+     *
      * @param array $keys
      * @return array
      */
     public function getErrorRow($keys = []): array
     {
         if (empty($keys)) {
-            return $this->row;
+            $keys = array_keys($this->row);
         }
 
         $result = [];
         foreach ($keys as $key) {
             $value = Arr::get($this->row, $key);
+
+            if (is_object($value)) {
+                if ($value instanceof Expression) {
+                    $value = null;
+                } elseif ($value instanceof DateTime) {
+                    $value = $value->format('Y/m/d');
+                } elseif (method_exists($value, '__toString')) {
+                    $value = $value->__toString();
+                } else {
+                    $value = null;
+                }
+            }
+
             // 将表达式变为空
-            $result[] = is_object($value) && $value instanceof Expression
-                ? null
-                : $value;
+            $result[] = $value;
         }
 
         return $result;
@@ -56,7 +78,7 @@ class ImportError extends RuntimeException
 
     /**
      * 获取错误行号
-     * 
+     *
      * @return int
      */
     public function getErrorLine()
