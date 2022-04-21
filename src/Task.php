@@ -49,6 +49,13 @@ abstract class Task
     protected $memoryLimit = '512M';
 
     /**
+     * 外部输入值
+     *
+     * @var array
+     */
+    protected $input = [];
+
+    /**
      * 原始行数据
      *
      * @var array
