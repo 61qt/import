@@ -20,9 +20,9 @@ class Handler
      *
      * @param Task $task
      * @param string $filename
-     * @param array $options
+     * @param array $input
      */
-    public function import(Task $task, string $filename, array $options = [])
+    public function import(Task $task, string $filename, array $input = [])
     {
         $reader = ReaderFactory::createFromType(Type::XLSX);
         $reader->open($filename);
@@ -30,7 +30,7 @@ class Handler
         $sheets = $this->buildSheetTasks($reader->getSheetIterator(), $task);
 
         foreach ($sheets as [$task, $rows]) {
-            $task->handle($rows, $options);
+            $task->handle($rows, $input);
         }
     }
 

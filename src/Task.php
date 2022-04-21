@@ -110,13 +110,13 @@ abstract class Task
      * 开始处理异步导入任务
      *
      * @param iterable $rows
-     * @param array $options
+     * @param array $input
      */
-    public function handle(iterable $rows, array $options = [])
+    public function handle(iterable $rows, array $input = [])
     {
         ini_set('memory_limit', $this->memoryLimit);
 
-        $this->options = $options;
+        $this->input = $input;
 
         if (!empty($this->model) && is_subclass_of($this->model, Model::class)) {
             /** @var Connection $connection */
@@ -125,7 +125,7 @@ abstract class Task
 
         try {
             // 任务开始前对option内容进行检查处理
-            $this->beforeImport($options);
+            $this->beforeImport($input);
             // 初始化错误信息
             $this->bootDictErrorMessages();
             $this->bootCheckTableDuplicated();
@@ -220,6 +220,8 @@ abstract class Task
 
     /**
      * 批量处理行信息
+     * 
+     * @return void
      */
     protected function checkAndFormatRows()
     {

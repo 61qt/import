@@ -9,9 +9,9 @@ trait Events
     /**
      * 导入开始前触发
      *
-     * @param array $options
+     * @param array $input
      */
-    public function beforeImport(array $options)
+    public function beforeImport(array $input)
     {
         // do something
     }

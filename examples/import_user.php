@@ -49,7 +49,7 @@ class UserImport extends Task
         // do something
     }
 
-    public function beforeImport(array $options)
+    public function beforeImport(array $input)
     {
         // 检查输入数据是否正确
     }
