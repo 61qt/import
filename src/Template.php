@@ -27,21 +27,22 @@ class Template implements ContractTemplate
     use ReplacesAttributes;
 
     /**
-     * @var Spreadsheet
-     */
-    protected $spreadsheet;
-
-    /**
+     * 导入sheet index
+     * 
      * @var string
      */
     protected $importSheetIndex;
 
     /**
+     * 导入sheet标题
+     * 
      * @var string
      */
     protected $importSheetTitle;
 
     /**
+     * 字典sheet标题
+     * 
      * @var string
      */
     protected $dictSheetTitle;
@@ -51,14 +52,14 @@ class Template implements ContractTemplate
      *
      * @var array
      */
-    protected $columns;
+    protected $columns = [];
 
     /**
      * 每一列的校验规则
      *
      * @var array
      */
-    protected $rules;
+    protected $rules = [];
 
     /**
      * 列备注信息
@@ -97,17 +98,9 @@ class Template implements ContractTemplate
 
     /**
      * @param Spreadsheet $spreadsheet
-     * @param array $rules
-     * @param array $remarks
      */
-    public function __construct(
-        Spreadsheet $spreadsheet,
-        array $rules,
-        array $remarks = []
-    ) {
-        $this->spreadsheet = $spreadsheet;
-        $this->rules       = $rules;
-        $this->remarks     = $remarks;
+    public function __construct(protected Spreadsheet $spreadsheet)
+    {
     }
 
     /**
@@ -154,10 +147,14 @@ class Template implements ContractTemplate
      * 设置导入列名
      *
      * @param array $columns
+     * @param array $rules
+     * @param array $remarks
      */
-    public function setFirstColumn(array $columns)
+    public function setFirstColumn(array $columns, array $rules = [], array $remarks = [])
     {
         $this->columns = $columns;
+        $this->rules   = $rules;
+        $this->remarks = $remarks;
     }
 
     /**

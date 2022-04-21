@@ -79,10 +79,10 @@ trait WithTemplate
      */
     public function getImportTemplate(array $input = []): Template
     {
-        $template = new Template(new Spreadsheet(), $this->rules, $this->remarks);
+        $template = new Template(new Spreadsheet());
 
         $template->setImportSheet(0);
-        $template->setFirstColumn($this->getFields());
+        $template->setFirstColumn($this->getFields(), $this->rules, $this->remarks);
         $template->setOptionalColumns($this->getOptionalColumns($input));
 
         foreach ($this->ruleComments as $rule => $comment) {

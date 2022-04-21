@@ -22,8 +22,10 @@ interface Template
      * 设置导入列名
      *
      * @param array $columns
+     * @param array $rules
+     * @param array $remarks
      */
-    public function setFirstColumn(array $columns);
+    public function setFirstColumn(array $columns, array $rules = [], array $remarks = []);
 
     /**
      * 设置允许使用下拉选项的列
