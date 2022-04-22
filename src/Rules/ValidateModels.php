@@ -219,7 +219,7 @@ abstract class ValidateModels implements Validatable
         $values = [];
         // 按照顺序取出row中的数据
         foreach ($aliases as $alias) {
-            if ($row[$alias] === '') {
+            if ($row[$alias] === '' || $row[$alias] === null) {
                 continue;
             }
 
