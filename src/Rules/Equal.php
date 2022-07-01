@@ -150,10 +150,10 @@ class Equal extends ValidateModels
 
             // 验证数据是否与db中一致
             foreach ($lines as [$line, $key, $row]) {
-                [$ok, $errMsg] = $this->checkEqual($models, $key, $row, $alias, $field, $errMsg);
+                [$ok, $err] = $this->checkEqual($models, $key, $row, $alias, $field, $errMsg);
 
                 if (!$ok) {
-                    $this->addError($line, "{$errField} {$errMsg}");
+                    $this->addError($line, "{$errField} {$err}");
                 }
             }
         }

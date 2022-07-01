@@ -71,10 +71,10 @@ class Unique extends ValidateModels
 
         // 获取所有重复的记录坐标
         foreach ($lines as [$line, $key, $row]) {
-            [$ok, $errMsg] = $this->checkExists($models, $key, $row, $errMsg);
+            [$ok, $err] = $this->checkExists($models, $key, $row, $errMsg);
 
             if (!$ok) {
-                $this->addError($line, "{$errField} {$errMsg}");
+                $this->addError($line, "{$errField} {$err}");
             }
         }
     }

@@ -135,10 +135,10 @@ class ExistsAndUnique extends ValidateModels
 
         // 获取数据不存在的错误行
         foreach ($lines as [$line, $key, $row]) {
-            [$ok, $errMsg] = $this->checkGroup($groups, $key, $row);
+            [$ok, $err] = $this->checkGroup($groups, $key, $row);
 
             if (!$ok) {
-                $this->addError($line, "{$errField} {$errMsg}");
+                $this->addError($line, "{$errField} {$err}");
             }
         }
     }

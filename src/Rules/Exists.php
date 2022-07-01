@@ -67,10 +67,10 @@ class Exists extends ValidateModels
 
         // 获取数据不存在的错误行
         foreach ($lines as [$line, $key, $row]) {
-            [$ok, $errMsg] = $this->checkExists($models, $key, $row, $errMsg);
+            [$ok, $err] = $this->checkExists($models, $key, $row, $errMsg);
 
             if (!$ok) {
-                $this->addError($line, "{$errField} {$errMsg}");
+                $this->addError($line, "{$errField} {$err}");
             }
         }
     }
