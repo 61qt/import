@@ -247,12 +247,12 @@ abstract class Task
     protected function checkAndFormatRow(array $data, int $line): array
     {
         $errors = [];
-        foreach ($this->dictionaries as $field => $dict) {
-            if (!isset($data[$field])) {
+        foreach ($this->optional as $field) {
+            if (empty($data[$field]) || empty($this->dictionaries[$field])) {
                 continue;
             }
 
-            $value = $this->formatDict($data[$field], $dict);
+            $value = $this->formatDict($data[$field], $this->dictionaries[$field]);
 
             if ($value !== false) {
                 $data[$field] = $value;
