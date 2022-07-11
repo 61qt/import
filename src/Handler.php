@@ -36,7 +36,7 @@ class Handler
         $reader = $this->getReader(Type::XLSX);
         $reader->open($filename);
 
-        $sheets = $this->buildSheetTasks($reader->getSheetIterator(), $task);
+        $sheets = $this->buildSheetTasks($reader->getSheetIterator(), $task, $input);
 
         foreach ($sheets as [$task, $rows]) {
             $task->handle($rows, $input);
@@ -65,12 +65,13 @@ class Handler
     /**
      * @param Iterator $sheetIterator
      * @param Task $task
+     * @param array $input
      * @return array
      */
-    protected function buildSheetTasks(Iterator $sheetIterator, Task $task): array
+    protected function buildSheetTasks(Iterator $sheetIterator, Task $task, array $input): array
     {
         $sheets = [];
-        $fields = $task->getFields();
+        $fields = $task->getFields($input);
         if ($task instanceof WithMultipleSheets) {
             $nameMap  = [];
             $indexMap = [];

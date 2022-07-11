@@ -118,9 +118,10 @@ abstract class Task
     /**
      * 获取导入字段
      *
+     * @param array $input
      * @return array
      */
-    abstract public function getFields(): array;
+    abstract public function getFields(array $input = []): array;
 
     /**
      * 开始处理异步导入任务

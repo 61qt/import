@@ -82,7 +82,7 @@ trait WithTemplate
         $template = new Template(new Spreadsheet());
 
         $template->setImportSheet(0);
-        $template->setFirstColumn($this->getFields(), $this->rules, $this->remarks);
+        $template->setFirstColumn($this->getFields($input), $this->rules, $this->remarks);
         $template->setOptionalColumns($this->getOptionalColumns($input));
 
         foreach ($this->ruleComments as $rule => $comment) {
