@@ -76,6 +76,13 @@ class Template implements ContractTemplate
     protected $dictionaries = [];
 
     /**
+     * 允许下拉的字段
+     *
+     * @var array
+     */
+    protected $optionalColumns = [];
+
+    /**
      * 导入示例内容
      *
      * @var array
@@ -158,15 +165,27 @@ class Template implements ContractTemplate
     }
 
     /**
-     * 设置允许使用下拉选项的列
+     * 设置字典
      *
      * @param array<string, Dictionary> $dictionaries
      * @param string|null $title
      */
-    public function setOptionalColumns(array $dictionaries, string $title = null)
+    public function setDictionaries(array $dictionaries, string $title = null)
     {
         $this->dictionaries   = $dictionaries;
         $this->dictSheetTitle = $title ?: '枚举列可导入内容';
+    }
+
+    /**
+     * 设置允许使用下拉选项的列
+     *
+     * @param array $columns
+     */
+    public function setOptionalColumns(array $columns)
+    {
+        foreach ($columns as $column) {
+            $this->optionalColumns[$column] = true;
+        }
     }
 
     /**
@@ -174,7 +193,7 @@ class Template implements ContractTemplate
      *
      * @param array $example
      */
-    public function setExampleSheet(array $example)
+    public function setExample(array $example)
     {
         $this->example = $example;
     }
@@ -366,7 +385,12 @@ class Template implements ContractTemplate
                 $columns[$column][$line++] = $key;
             }
 
+            $dictIndex++;
             $maxLine = max($maxLine, $line);
+
+            if (empty($this->optionalColumns[$column])) {
+                continue;
+            }
 
             $validation = (new DataValidation())
                 ->setType(DataValidation::TYPE_LIST)
@@ -379,7 +403,7 @@ class Template implements ContractTemplate
                 ->setError("必须在可选的范围内")
                 ->setFormula1($this->getFormula(
                     $this->dictSheetTitle,
-                    Coordinate::stringFromColumnIndex(++$dictIndex),
+                    Coordinate::stringFromColumnIndex($dictIndex),
                     count($columns[$column]) + 1
                 ));
 
@@ -415,7 +439,7 @@ class Template implements ContractTemplate
         // 生成首行信息
         $first = [];
         foreach (array_keys($columns) as $column) {
-            $first[] = "{$this->columns[$column]}字典";
+            $first[] = $this->columns[$column];
         }
 
         $rows = [$first];

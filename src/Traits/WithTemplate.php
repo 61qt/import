@@ -7,6 +7,7 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\Border;
+use QT\Import\Contracts\Template as ContractTemplate;
 
 trait WithTemplate
 {
@@ -77,12 +78,13 @@ trait WithTemplate
      * @param array $input
      * @return Template
      */
-    public function getImportTemplate(array $input = []): Template
+    public function getImportTemplate(array $input = []): ContractTemplate
     {
         $template = new Template(new Spreadsheet());
 
         $template->setImportSheet(0);
-        $template->setFirstColumn($this->getFields($input), $this->rules, $this->remarks);
+        $template->setFirstColumn($this->getFields(), $this->rules, $this->remarks);
+        $template->setDictionaries($this->getDictionaries());
         $template->setOptionalColumns($this->getOptionalColumns($input));
 
         foreach ($this->ruleComments as $rule => $comment) {
@@ -104,17 +106,6 @@ trait WithTemplate
      */
     public function getOptionalColumns(array $input = []): array
     {
-        $optional = [];
-        foreach ($this->optional as $field) {
-            $dictionary = $this->getDictionary($field);
-
-            if ($dictionary === null) {
-                continue;
-            }
-
-            $optional[$field] = $dictionary;
-        }
-
-        return $optional;
+        return $this->optional;
     }
 }

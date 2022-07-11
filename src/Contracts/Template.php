@@ -11,14 +11,6 @@ use Illuminate\Database\Query\Builder;
 interface Template
 {
     /**
-     * 设置导入sheet
-     *
-     * @param int $index
-     * @param string|null $title
-     */
-    public function setImportSheet(int $index, string $title = null);
-
-    /**
      * 设置导入列名
      *
      * @param array $columns
@@ -28,19 +20,11 @@ interface Template
     public function setFirstColumn(array $columns, array $rules = [], array $remarks = []);
 
     /**
-     * 设置允许使用下拉选项的列
-     *
-     * @param array<string, Dictionary> $dictionaries
-     * @param string|null $title
-     */
-    public function setOptionalColumns(array $dictionaries, string $title = null);
-
-    /**
-     * 在excel第三个sheet中生成示例(自动生成和模板一样的首行)
+     * 生成示例
      *
      * @param array $example
      */
-    public function setExampleSheet(array $example);
+    public function setExample(array $example);
 
     /**
      * 给导入模板填入基础数据
