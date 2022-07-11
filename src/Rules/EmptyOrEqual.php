@@ -4,6 +4,7 @@ namespace QT\Import\Rules;
 
 use Illuminate\Support\Arr;
 use Illuminate\Database\Query\Expression;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * 检查导入数据与数据库中已存在的数据是否一致或者为空
@@ -46,17 +47,22 @@ class EmptyOrEqual extends Equal
     /**
      * 检查数据是否与数据库的值相等(数据库数据有数据且excel数据不为空时校验)
      *
-     * @param \Illuminate\Database\Eloquent\Collection $models
+     * @param Collection $models
      * @param string $key
      * @param array $row
      * @param string $alias 在row中的字段名
      * @param string $field 在model中的字段名
      * @param string $errMsg
-     *
      * @return array
      */
-    protected function checkEqual($models, $key, $row, $alias, $field, $errMsg)
-    {
+    protected function checkEqual(
+        Collection $models,
+        string $key,
+        array $row,
+        string $alias,
+        string $field,
+        string $errMsg
+    ): array {
         // 如果数据库中没有不做检查
         if (!$models->has($key)) {
             return [true, null];

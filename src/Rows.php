@@ -65,7 +65,9 @@ class Rows implements Iterator
     }
 
     /**
-     * {@inheritdoc}
+     * 游标到下一行
+     *
+     * @return void
      */
     public function next(): void
     {
@@ -73,7 +75,9 @@ class Rows implements Iterator
     }
 
     /**
-     * {@inheritdoc}
+     * 获取当前行的key
+     *
+     * @return integer
      */
     public function key(): int
     {
@@ -81,7 +85,9 @@ class Rows implements Iterator
     }
 
     /**
-     * {@inheritdoc}
+     * 当前行数据
+     *
+     * @return array
      */
     public function current(): array
     {
@@ -95,8 +101,8 @@ class Rows implements Iterator
             if (!empty($row[$index])) {
                 $value = $row[$index]->getValue();
 
-                if (is_string($value)) {
-                    $value = trim($value);
+                if (is_scalar($value)) {
+                    $value = trim(strval($value));
                 }
             }
 
@@ -114,7 +120,7 @@ class Rows implements Iterator
      * @return array
      * @throws Error
      */
-    private function formatFields(IteratorInterface $rows, array $fields)
+    private function formatFields(IteratorInterface $rows, array $fields): array
     {
         $results = [];
         $columns = array_flip($fields);

@@ -54,11 +54,14 @@ trait CheckTableDuplicated
     }
 
     /**
-     * @param $data
-     * @param $line
+     * 检查excel内是否重复
+     *
+     * @param array $data
+     * @param integer $line
+     * @return void
      * @throws ValidationException
      */
-    public function checkTableDuplicated($data, $line)
+    public function checkTableDuplicated(array $data, int $line)
     {
         foreach ($this->uniqueKeys as $key => $fields) {
             if (!Arr::has($data, $fields)) {
@@ -71,17 +74,17 @@ trait CheckTableDuplicated
                 continue;
             }
 
-            $value = array_to_key($values);
+            $valueKey = array_to_key($values);
 
-            if (!array_key_exists($value, $this->existingFieldValues[$key])) {
+            if (!array_key_exists($valueKey, $this->existingFieldValues[$key])) {
                 // 冗余字段已存在的值
-                $this->existingFieldValues[$key][$value] = $line;
+                $this->existingFieldValues[$key][$valueKey] = $line;
                 continue;
             }
 
             $attributes   = $this->getCustomAttributes();
-            $conflictLine = $this->existingFieldValues[$key][$value];
-            $errField     = join(', ', array_map(fn($field) => $attributes[$field] ?? $field, $fields));
+            $conflictLine = $this->existingFieldValues[$key][$valueKey];
+            $errField     = join(', ', array_map(fn ($field) => $attributes[$field] ?? $field, $fields));
 
             throw new ValidationException(sprintf(
                 "%s 错误: 原表第%s行 与 第%s行 重复,请确保数据表内的数据为唯一的",
@@ -93,11 +96,13 @@ trait CheckTableDuplicated
     }
 
     /**
+     * 检查是否为空并格式化值
+     *
      * @param array $data
      * @param array $fields
-     * @return array
+     * @return array|boolean
      */
-    protected function getAndCheckValues($data, $fields)
+    protected function getAndCheckValues(array $data, array $fields): array|bool
     {
         $values = [];
         // 多个值作为唯一校验时，其中一个没有填写不检查唯一性

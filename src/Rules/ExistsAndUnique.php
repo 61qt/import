@@ -98,7 +98,8 @@ class ExistsAndUnique extends ValidateModels
      *
      * @param Builder|BaseBuilder $query
      * @param array $fields
-     * @param array $rows
+     * @param array $row
+     * @return void
      */
     protected function buildConditions(Builder | BaseBuilder $query, array $fields, array $row)
     {
@@ -146,13 +147,12 @@ class ExistsAndUnique extends ValidateModels
     /**
      * 检查数据是否存在且不重复
      *
-     * @param $groups
-     * @param $key
-     * @param $row
-     *
+     * @param Collection $groups
+     * @param string $key
+     * @param array $row
      * @return array
      */
-    protected function checkGroup($groups, $key, $row)
+    protected function checkGroup(Collection $groups, string $key, array $row): array
     {
         $values = $this->getRowValues($row, array_keys($this->allowNullFields));
 

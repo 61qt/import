@@ -78,7 +78,7 @@ class UniqueIgnoreFieldNull extends Unique
      * 生成需要忽略记录的筛选条件
      *
      * @param Builder|BaseBuilder $query
-     * @param array $rows
+     * @param array $row
      */
     protected function buildIgnoreConditions(Builder | BaseBuilder $query, array $row)
     {

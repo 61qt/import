@@ -28,21 +28,21 @@ class Template implements ContractTemplate
 
     /**
      * 导入sheet index
-     * 
+     *
      * @var string
      */
     protected $importSheetIndex;
 
     /**
      * 导入sheet标题
-     * 
+     *
      * @var string
      */
     protected $importSheetTitle;
 
     /**
      * 字典sheet标题
-     * 
+     *
      * @var string
      */
     protected $dictSheetTitle;
@@ -91,7 +91,7 @@ class Template implements ContractTemplate
 
     /**
      * 校验规则列样式
-     * 
+     *
      * @var array
      */
     protected $ruleStyles = [];
@@ -105,12 +105,12 @@ class Template implements ContractTemplate
 
     /**
      * 设置校验规则列对应的提示语
-     * 
+     *
      * @param string $rule
      * @param array|string $comment
      * @return self
      */
-    public function setRuleComment($rule, $comment)
+    public function setRuleComment(string $rule, array|string $comment)
     {
         $this->ruleComments[$rule] = $comment;
 
@@ -119,12 +119,12 @@ class Template implements ContractTemplate
 
     /**
      * 设置校验规则列对应的样式
-     * 
+     *
      * @param string $rule
      * @param array $style
      * @return self
      */
-    public function setRuleStyle($rule, $style)
+    public function setRuleStyle(string $rule, array $style)
     {
         $this->ruleStyles[$rule] = $style;
 
@@ -273,9 +273,9 @@ class Template implements ContractTemplate
                 $sheet->getComment("{$coordinate}1")->setText($text);
             }
 
-            foreach ($this->ruleStyles as $rule => $sytle) {
+            foreach ($this->ruleStyles as $rule => $style) {
                 if (array_key_exists($rule, $rules)) {
-                    $sheet->getStyle("{$coordinate}1")->applyFromArray($sytle);
+                    $sheet->getStyle("{$coordinate}1")->applyFromArray($style);
                 }
             }
         }
@@ -285,7 +285,7 @@ class Template implements ContractTemplate
      * @param array|string $rules
      * @return array
      */
-    protected function getRuleComment($rules)
+    protected function getRuleComment(array|string $rules): array
     {
         if (empty($rules)) {
             return [];
@@ -396,11 +396,12 @@ class Template implements ContractTemplate
     /**
      * 在excel第二个sheet中生成字典
      *
-     * @param array<string, Dictionary> $columns
-     * @param int $maxLine
-     * @param string $title
+     * @param array $columns
+     * @param integer $maxLine
+     * @param string|null $title
+     * @return void
      */
-    protected function generateDictSheet($columns, $maxLine, $title)
+    protected function generateDictSheet(array $columns, int $maxLine, string $title = null)
     {
         if (empty($columns)) {
             return;
@@ -438,7 +439,7 @@ class Template implements ContractTemplate
 
     /**
      * 生成示例sheet
-     * 
+     *
      * @return self
      */
     protected function generateExampleSheet()
@@ -466,12 +467,14 @@ class Template implements ContractTemplate
     }
 
     /**
+     * 设置格式
+     *
+     * @param string $title
      * @param string $column
-     * @param int $startLine
-     * @param int $endLine
+     * @param integer $endLine
      * @return string
      */
-    protected function getFormula($title, $column, $endLine)
+    protected function getFormula(string $title, string $column, int $endLine): string
     {
         return str_replace(
             ['{title}', '{column}', '{endLine}'],
@@ -484,11 +487,11 @@ class Template implements ContractTemplate
      * 填入基础数据
      *
      * @param Worksheet $sheet
-     * @param \Iterable $source
+     * @param iterable $source
      * @param int $startColumn
      * @param int $startRow
      */
-    protected function addStrictStringRows($sheet, $source, $startColumn = 0, $startRow = 1)
+    protected function addStrictStringRows(Worksheet $sheet, iterable $source, int $startColumn = 0, int $startRow = 1)
     {
         foreach ($source as $row) {
             $currentColumn = $startColumn;

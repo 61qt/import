@@ -2,6 +2,7 @@
 
 namespace QT\Import;
 
+use DateTime;
 use Throwable;
 use RuntimeException;
 use QT\Import\Traits\Events;
@@ -13,6 +14,7 @@ use QT\Import\Exceptions\ImportError;
 use Illuminate\Database\Eloquent\Model;
 use QT\Import\Traits\CheckTableDuplicated;
 use QT\Import\Exceptions\ValidationException;
+use Illuminate\Validation\ValidationRuleParser;
 
 /**
  * Import Task
@@ -77,6 +79,13 @@ abstract class Task
     protected $errors = [];
 
     /**
+     * 需要格式化日期的字段
+     * 如 'birthday' => 'Ymd'
+     * @var array
+     */
+    protected $fieldDateFormats = [];
+
+    /**
      * 是否捕获行错误
      * 可以在同步导入时直接抛出错误不执行后续逻辑
      * 异步任务执行时请开启该标识,防止异常中断任务
@@ -136,6 +145,7 @@ abstract class Task
             // 初始化错误信息
             $this->bootDictErrorMessages();
             $this->bootCheckTableDuplicated();
+            $this->bootFieldDateFormats();
             // 处理行内容
             $this->processRows($rows);
             // 插入到db
@@ -152,6 +162,36 @@ abstract class Task
     }
 
     /**
+     * 加载需要格式化日期的字段规则
+     *
+     * @return void
+     */
+    protected function bootFieldDateFormats()
+    {
+        foreach ($this->rules as $field => $rules) {
+            if (empty($rules)) {
+                $rules = [];
+            }
+
+            if (is_string($rules)) {
+                $rules = explode('|', $rules);
+            }
+
+            $rules = array_reduce($rules, function ($result, $rule) {
+                list($rule, $params) = ValidationRuleParser::parse($rule);
+
+                $result[$rule] = $params;
+
+                return $result;
+            }, []);
+
+            if (isset($rules['DateFormat']) && !isset($this->fieldDateFormats[$field])) {
+                $this->fieldDateFormats[$field] = $rules['DateFormat'][0];
+            }
+        }
+    }
+
+    /**
      * 处理上传文件
      *
      * @param iterable $rows
@@ -162,6 +202,13 @@ abstract class Task
             // 整行都是空的就忽略
             if (empty($row)) {
                 continue;
+            }
+
+            // 提前格式化datetime类型
+            foreach ($this->fieldDateFormats as $field => $format) {
+                if ($row[$field] instanceof DateTime) {
+                    $row[$field] = $row[$field]->format($format);
+                }
             }
 
             try {
@@ -193,10 +240,10 @@ abstract class Task
      *
      * @param array $data
      * @param int $line
-     * @return mixed
+     * @return array
      * @throws RuntimeException
      */
-    protected function checkAndFormatRow(array $data, int $line)
+    protected function checkAndFormatRow(array $data, int $line): array
     {
         $errors = [];
         foreach ($this->dictionaries as $field => $dict) {
@@ -227,7 +274,7 @@ abstract class Task
 
     /**
      * 批量处理行信息
-     * 
+     *
      * @return void
      */
     protected function checkAndFormatRows()
@@ -237,8 +284,10 @@ abstract class Task
             $row = $this->originalRows[$line];
 
             $this->errors[$line] = new ImportError(
-                $row, $line, new ValidationException(join('; ', $errMsg)
-            ));
+                $row,
+                $line,
+                new ValidationException(join('; ', $errMsg))
+            );
 
             unset($this->rows[$line]);
         }

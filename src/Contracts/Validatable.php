@@ -15,7 +15,7 @@ interface Validatable
      * @param array $customAttributes
      * @return bool
      */
-    public function validate($rows, $customAttributes = []): bool;
+    public function validate(array $rows, array $customAttributes = []): bool;
 
     /**
      * 获取错误行

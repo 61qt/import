@@ -162,17 +162,22 @@ class Equal extends ValidateModels
     /**
      * 检查数据是否相同
      *
-     * @param \Illuminate\Database\Eloquent\Collection $models
+     * @param Collection $models
      * @param string $key
      * @param array $row
      * @param string $alias 在row中的字段名
      * @param string $field 在model中的字段名
-     * @param string $errMsg
-     *
+     * @param string $errMsg 错误信息
      * @return array
      */
-    protected function checkEqual($models, $key, $row, $alias, $field, $errMsg)
-    {
+    protected function checkEqual(
+        Collection $models,
+        string $key,
+        array $row,
+        string $alias,
+        string $field,
+        string $errMsg
+    ): array {
         // 如果数据库中没有不做检查
         if (!$models->has($key)) {
             return [true, null];

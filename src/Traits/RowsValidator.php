@@ -17,11 +17,12 @@ trait RowsValidator
     }
 
     /**
-     * 将需要导入的结果集进行批量检查
+     *  将需要导入的结果集进行批量检查
      *
-     * @param $rows
+     * @param array $rows
+     * @return array
      */
-    protected function validateRows($rows)
+    protected function validateRows(array $rows): array
     {
         $errors = [];
         foreach ($this->getRowsRules() as $rule) {

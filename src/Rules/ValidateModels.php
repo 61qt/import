@@ -134,13 +134,15 @@ abstract class ValidateModels implements Validatable
      * @param array $customAttributes
      * @return bool
      */
-    public function validate($rows, $customAttributes = []): bool
+    public function validate(array $rows, array $customAttributes = []): bool
     {
         $this->customAttributes = $customAttributes;
 
         foreach ($this->attributes as $key => $fields) {
             list($query, $lines) = $this->buildSql(
-                $this->query->clone(), $rows, $fields
+                $this->query->clone(),
+                $rows,
+                $fields
             );
 
             // where条件对应的行号为空,说明没有生成条件,不做处理
@@ -175,11 +177,12 @@ abstract class ValidateModels implements Validatable
      * TODO 支持分片查询,防止预处理占位符溢出
      * 生成where条件,并返回where条件对应的行号
      *
-     * @param Builder|BaseBuilder $query
+     * @param  Builder|BaseBuilder $query
      * @param array $rows
      * @param array $fields
+     * @return array
      */
-    protected function buildSql(Builder | BaseBuilder $query, $rows, $fields)
+    protected function buildSql(Builder | BaseBuilder $query, array $rows, array $fields): array
     {
         $lines   = [];
         $aliases = array_keys($fields);
@@ -211,10 +214,11 @@ abstract class ValidateModels implements Validatable
     /**
      * 获取行内数据
      *
-     * @param array $rows
+     * @param array $row
      * @param array $aliases
+     * @return array
      */
-    protected function getRowValues(array $row, array $aliases)
+    protected function getRowValues(array $row, array $aliases): array
     {
         $values = [];
         // 按照顺序取出row中的数据
@@ -255,7 +259,7 @@ abstract class ValidateModels implements Validatable
      *
      * @param Builder|BaseBuilder $query
      * @param array $fields
-     * @param array $rows
+     * @param array $row
      */
     protected function buildConditions(Builder | BaseBuilder $query, array $fields, array $row)
     {
@@ -268,7 +272,7 @@ abstract class ValidateModels implements Validatable
      * 生成需要忽略记录的筛选条件
      *
      * @param Builder|BaseBuilder $query
-     * @param array $rows
+     * @param array $row
      */
     protected function buildIgnoreConditions(Builder | BaseBuilder $query, array $row)
     {
@@ -286,8 +290,8 @@ abstract class ValidateModels implements Validatable
     protected function formatErrorFields(array $fields): string
     {
         return collect(array_keys($fields))
-            ->map(fn($field) => $this->getFieldDisplayName($field))
-            ->filter(fn($field) => !empty($field))
+            ->map(fn ($field)    => $this->getFieldDisplayName($field))
+            ->filter(fn ($field) => !empty($field))
             ->implode(', ');
     }
 
@@ -306,7 +310,7 @@ abstract class ValidateModels implements Validatable
      * 添加错误信息
      *
      * @param int $line
-     * @param string $errorMessage
+     * @param string $errMsg
      */
     protected function addError(int $line, string $errMsg)
     {

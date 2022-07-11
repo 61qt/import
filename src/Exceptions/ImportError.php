@@ -47,7 +47,7 @@ class ImportError extends RuntimeException
      * @param array $keys
      * @return array
      */
-    public function getErrorRow($keys = []): array
+    public function getErrorRow(array $keys = []): array
     {
         if (empty($keys)) {
             $keys = array_keys($this->row);

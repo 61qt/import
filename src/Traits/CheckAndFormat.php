@@ -2,7 +2,6 @@
 
 namespace QT\Import\Traits;
 
-use DateTime;
 use RuntimeException;
 use Illuminate\Container\Container;
 use QT\Import\Contracts\Dictionary;
@@ -40,13 +39,6 @@ trait CheckAndFormat
      * @var array
      */
     protected $customAttributes = [];
-
-    /**
-     * 日期格式
-     *
-     * @var string
-     */
-    protected $dateFormat = 'Y-m-d';
 
     /**
      * 是否使用默认值填充
@@ -164,7 +156,7 @@ trait CheckAndFormat
      * @param int $line
      * @return array
      */
-    protected function checkRow($data, $line)
+    protected function checkRow(array $data, int $line): array
     {
         // 验证参数格式
         $validator = $this->getValidationFactory()->make(
@@ -184,13 +176,9 @@ trait CheckAndFormat
      * @param int $line
      * @return array
      */
-    protected function formatRow($data, $line)
+    protected function formatRow(array $data, int $line): array
     {
         foreach ($data as $field => $value) {
-            if ($value instanceof DateTime) {
-                $data[$field] = $value->format($this->dateFormat);
-            }
-
             // 过滤空值
             if ($value !== '') {
                 continue;
@@ -242,7 +230,7 @@ trait CheckAndFormat
      *
      * @return array
      */
-    protected function getCustomAttributes()
+    protected function getCustomAttributes(): array
     {
         return array_merge($this->getFields(), $this->customAttributes);
     }
@@ -253,7 +241,7 @@ trait CheckAndFormat
      * @param string $field
      * @return mixed|\Illuminate\Database\Query\Expression
      */
-    protected function getDefaultValue($field)
+    protected function getDefaultValue(string $field)
     {
         return array_key_exists($field, $this->default)
             ? $this->default[$field]
@@ -267,7 +255,7 @@ trait CheckAndFormat
      * @param int $line
      * @return string
      */
-    protected function getSheetPos(int $columnIndex, int $line)
+    protected function getSheetPos(int $columnIndex, int $line): string
     {
         return CellHelper::getColumnLettersFromColumnIndex($columnIndex) . $line;
     }

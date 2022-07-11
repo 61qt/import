@@ -30,10 +30,10 @@ trait WithTemplate
      * @var array
      */
     protected $ruleComments = [
-        'Required' => '必填',
-        'Integer'  => '数字',
-        'Date'     => '格式为 年/月/日',
-        'Min'      => [
+        'Required'   => '必填',
+        'Integer'    => '数字',
+        'DateFormat' => '格式为 :format',
+        'Min'        => [
             'Integer' => '最小为 :min',
             'String'  => '最短为 :min',
         ],

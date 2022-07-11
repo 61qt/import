@@ -78,15 +78,18 @@ class Exists extends ValidateModels
     /**
      * 检查数据是否存在
      *
-     * @param $models
-     * @param $key
-     * @param $row
-     * @param $errMsg
-     *
+     * @param Collection $models
+     * @param string $key
+     * @param array $row
+     * @param string $errMsg
      * @return array
      */
-    protected function checkExists($models, $key, $row, $errMsg)
-    {
+    protected function checkExists(
+        Collection $models,
+        string $key,
+        array $row,
+        string $errMsg
+    ): array {
         return $models->has($key)
            ? [true, null]
            : [false, $errMsg];
