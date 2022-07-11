@@ -80,10 +80,11 @@ trait WithTemplate
      */
     public function getImportTemplate(array $input = []): ContractTemplate
     {
+        $fields   = $this->getFields($input);
         $template = new Template(new Spreadsheet());
 
         $template->setImportSheet(0);
-        $template->setFirstColumn($this->getFields($input), $this->rules, $this->remarks);
+        $template->setFirstColumn($fields, $this->rules, $this->remarks);
         $template->setDictionaries($this->getDictionaries());
         $template->setOptionalColumns($this->getOptionalColumns($input));
 
