@@ -73,7 +73,7 @@ trait CheckAndFormat
      */
     protected function bootDictErrorMessages()
     {
-        $fields = $this->getFields();
+        $fields = $this->getFields($this->input);
 
         foreach ($this->dictionaries as $field => $dict) {
             if (!empty($this->dictErrorMessages[$field])) {
@@ -210,7 +210,7 @@ trait CheckAndFormat
         }
 
         $messages = [];
-        $fields   = array_keys($this->getFields());
+        $fields   = array_keys($this->getFields($this->input));
         foreach ($errors as $field => $message) {
             if (is_array($message)) {
                 $message = join(',', $message);
@@ -232,7 +232,7 @@ trait CheckAndFormat
      */
     protected function getCustomAttributes(): array
     {
-        return array_merge($this->getFields(), $this->customAttributes);
+        return array_merge($this->getFields($this->input), $this->customAttributes);
     }
 
     /**
