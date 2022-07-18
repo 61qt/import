@@ -331,28 +331,25 @@ class Template implements ContractTemplate
 
             $comment = $this->ruleComments[$rule];
 
-            if (!is_array($comment)) {
-                $value = $params[0] ?? '';
-
-                if (method_exists($this, $replacer = "replace{$rule}")) {
-                    $suffix[] = $this->{$replacer}($comment, '', $rule, $params);
-                } else {
-                    $suffix[] = str_replace(":{$rule}", $value, $comment);
+            if (is_string($comment)) {
+                $message = $comment;
+            } else {
+                $commentKey = 'String';
+                foreach ($comment as $key => $msg) {
+                    if (array_key_exists($key, $rules)) {
+                        $commentKey = $key;
+                        break;
+                    }
                 }
-                continue;
+                $message = $comment[$commentKey] ?? '';
             }
 
-            foreach ($comment as $key => $msg) {
-                if (!array_key_exists($key, $rules)) {
-                    continue;
-                }
+            $value = $params[0] ?? '';
 
-                $value = $params[0] ?? '';
-                if (method_exists($this, $replacer = "replace{$rule}")) {
-                    $suffix[] = $this->{$replacer}($msg, '', $rule, $params);
-                } else {
-                    $suffix[] = str_replace(":{$rule}", $value, $msg);
-                }
+            if (method_exists($this, $replacer = "replace{$rule}")) {
+                $suffix[] = $this->{$replacer}($message, '', $rule, $params);
+            } else {
+                $suffix[] = str_replace(":{$rule}", $value, $message);
             }
         }
 

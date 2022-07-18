@@ -47,6 +47,8 @@ trait WithTemplate
             "Numeric" => "数值范围 :min - :max 之间。",
             "String"  => "必须介于 :min - :max 个字符之间。",
         ],
+        'DigitsBetween' => ' :min 到 :max 位数字',
+        'Digits'        => ' :digits 位数字',
     ];
 
     /**

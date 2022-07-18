@@ -31,6 +31,13 @@ class Rows implements Iterator
     protected $fields;
 
     /**
+     * 严格校验表头字段是否和模板一致
+     *
+     * @var bool
+     */
+    protected $strictCheck;
+
+    /**
      * @var string
      */
     protected $fieldErrorMsg = '导入模板与系统提供的模板不一致，请重新导入';
@@ -39,11 +46,12 @@ class Rows implements Iterator
      * @param SheetInterface $sheet
      * @param array $fields
      */
-    public function __construct(SheetInterface $sheet, array $fields)
+    public function __construct(SheetInterface $sheet, array $fields, bool $strictCheck)
     {
-        $this->sheet  = $sheet;
-        $this->rows   = $sheet->getRowIterator();
-        $this->fields = $this->formatFields($this->rows, $fields);
+        $this->sheet       = $sheet;
+        $this->rows        = $sheet->getRowIterator();
+        $this->fields      = $this->formatFields($this->rows, $fields);
+        $this->strictCheck = $strictCheck;
     }
 
     /**
@@ -139,6 +147,10 @@ class Rows implements Iterator
             }
 
             $results[] = $columns[$value];
+        }
+
+        if ($this->strictCheck && count($columns) !== count($results)) {
+            throw new RuntimeException($this->fieldErrorMsg);
         }
 
         return $results;

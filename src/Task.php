@@ -116,6 +116,13 @@ abstract class Task
     protected $interval = 3;
 
     /**
+     * 严格校验表头字段是否和模板一致
+     *
+     * @var boolean
+     */
+    protected $strictCheck = true;
+
+    /**
      * 获取导入字段
      *
      * @param array $input

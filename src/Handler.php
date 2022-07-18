@@ -87,12 +87,12 @@ class Handler
                     throw new SheetNotFoundException("Sheet[{$index}] 不存在");
                 }
 
-                $sheets[] = [$subTask, new Rows($map[$index], $fields)];
+                $sheets[] = [$subTask, new Rows($map[$index], $fields, $task->strictCheck)];
             }
         } else {
             $sheetIterator->rewind();
 
-            $sheets[] = [$task, new Rows($sheetIterator->current(), $fields)];
+            $sheets[] = [$task, new Rows($sheetIterator->current(), $fields, $task->strictCheck)];
         }
 
         return $sheets;
