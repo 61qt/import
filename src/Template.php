@@ -24,8 +24,6 @@ use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
  */
 class Template implements ContractTemplate
 {
-    use ReplacesAttributes;
-
     /**
      * 导入sheet index
      *
@@ -114,10 +112,10 @@ class Template implements ContractTemplate
      * 设置校验规则列对应的提示语
      *
      * @param string $rule
-     * @param array|string $comment
+     * @param callable $comment
      * @return self
      */
-    public function setRuleComment(string $rule, array|string $comment)
+    public function setRuleComment(string $rule, callable $comment)
     {
         $this->ruleComments[$rule] = $comment;
 
@@ -329,28 +327,7 @@ class Template implements ContractTemplate
                 continue;
             }
 
-            $comment = $this->ruleComments[$rule];
-
-            if (is_string($comment)) {
-                $message = $comment;
-            } else {
-                $commentKey = 'String';
-                foreach ($comment as $key => $msg) {
-                    if (array_key_exists($key, $rules)) {
-                        $commentKey = $key;
-                        break;
-                    }
-                }
-                $message = $comment[$commentKey] ?? '';
-            }
-
-            $value = $params[0] ?? '';
-
-            if (method_exists($this, $replacer = "replace{$rule}")) {
-                $suffix[] = $this->{$replacer}($message, '', $rule, $params);
-            } else {
-                $suffix[] = str_replace(":{$rule}", $value, $message);
-            }
+            $suffix[] = $this->ruleComments[$rule]($rule, $params, $rules);
         }
 
         return [join(',', $suffix), $rules];

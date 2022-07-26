@@ -8,9 +8,12 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use QT\Import\Contracts\Template as ContractTemplate;
+use Illuminate\Validation\Concerns\ReplacesAttributes;
 
 trait WithTemplate
 {
+    use ReplacesAttributes;
+
     /**
      * 字段备注信息
      *
@@ -91,7 +94,7 @@ trait WithTemplate
         $template->setOptionalColumns($this->getOptionalColumns($input));
 
         foreach ($this->ruleComments as $rule => $comment) {
-            $template->setRuleComment($rule, $comment);
+            $template->setRuleComment($rule, $this->getCommentCallback($comment));
         }
 
         foreach ($this->ruleStyles as $rule => $style) {
@@ -99,6 +102,34 @@ trait WithTemplate
         }
 
         return $template;
+    }
+
+    /**
+     * 获取校验规则对应的备注处理方法
+     *
+     * @param mixed $comment
+     * @return callable
+     */
+    protected function getCommentCallback(mixed $comment): callable
+    {
+        return function (string $rule, array $params, array $all) use ($comment) {
+            if (is_string($comment)) {
+                $message = $comment;
+            } else {
+                $message = $comment['String'] ?? '';
+                foreach ($comment as $key => $msg) {
+                    if (array_key_exists($key, $all)) {
+                        $message = $msg;
+                        break;
+                    }
+                }
+            }
+
+            if (method_exists($this, $replacer = "replace{$rule}")) {
+                return $this->{$replacer}($message, '', $rule, $params);
+            }
+            return str_replace(":{$rule}", $params[0] ?? '', $message);
+        };
     }
 
     /**
