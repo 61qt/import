@@ -6,6 +6,7 @@ use DateTime;
 use Throwable;
 use RuntimeException;
 use QT\Import\Traits\Events;
+use QT\Import\Traits\CheckMaxRow;
 use QT\Import\Traits\WithTemplate;
 use Illuminate\Database\Connection;
 use QT\Import\Traits\RowsValidator;
@@ -24,6 +25,7 @@ use Illuminate\Validation\ValidationRuleParser;
 abstract class Task
 {
     use Events;
+    use CheckMaxRow;
     use WithTemplate;
     use RowsValidator;
     use CheckAndFormat;
@@ -48,7 +50,7 @@ abstract class Task
      *
      * @var string
      */
-    protected $memoryLimit = '512M';
+    protected $memoryLimit = '128M';
 
     /**
      * 外部输入值
@@ -186,7 +188,7 @@ abstract class Task
             }
 
             $rules = array_reduce($rules, function ($result, $rule) {
-                list($rule, $params) = ValidationRuleParser::parse($rule);
+                [$rule, $params] = ValidationRuleParser::parse($rule);
 
                 $result[$rule] = $params;
 
@@ -212,6 +214,8 @@ abstract class Task
                 continue;
             }
 
+            $this->checkMaxRow($line);
+
             // 提前格式化datetime类型
             foreach ($this->fieldDateFormats as $field => $format) {
                 if ($row[$field] instanceof DateTime) {
@@ -236,6 +240,13 @@ abstract class Task
 
                 // 整合错误信息文档
                 $this->errors[$line] = new ImportError($row, $line, $e);
+            }
+
+            $now = time();
+            if ($now > $this->reportAt + $this->interval) {
+                $this->onReport($line);
+
+                $this->reportAt = $now;
             }
         }
 
@@ -270,9 +281,7 @@ abstract class Task
 
         $this->throwNotEmpty($errors, $line);
 
-        [$result, $line] = $this->formatRow(
-            ...$this->checkRow($data, $line)
-        );
+        [$result, $line] = $this->formatRow(...$this->checkRow($data, $line));
 
         // 进行唯一性检查,保证唯一索引字段在excel内不会有重复
         $this->checkTableDuplicated($result, $line);
