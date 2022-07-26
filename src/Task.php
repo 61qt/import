@@ -118,11 +118,11 @@ abstract class Task
     protected $interval = 3;
 
     /**
-     * 严格校验表头字段是否和模板一致
-     *
-     * @var boolean
+     * 字段校验模式(默认使用宽松模式)
+     * 
+     * @var int
      */
-    protected $strictCheck = true;
+    protected $fieldsCheckMode = Rows::TOLERANT_MODE;
 
     /**
      * 获取导入字段
@@ -131,6 +131,17 @@ abstract class Task
      * @return array
      */
     abstract public function getFields(array $input = []): array;
+
+    /**
+     * 获取字段校验模式
+     * 
+     * @param array $input
+     * @return int
+     */
+    public function getFieldsCheckMode(array $input = []): int
+    {
+        return $this->fieldsCheckMode;
+    }
 
     /**
      * 开始处理异步导入任务

@@ -15,6 +15,9 @@ use Box\Spout\Reader\IteratorInterface;
  */
 class Rows implements Iterator
 {
+    public const STRICT_MODE   = 1;
+    public const TOLERANT_MODE = 2;
+
     /**
      * @var SheetInterface $sheet
      */
@@ -31,11 +34,11 @@ class Rows implements Iterator
     protected $fields;
 
     /**
-     * 严格校验表头字段是否和模板一致
+     * 校验模式
      *
      * @var bool
      */
-    protected $strictCheck;
+    protected $mode;
 
     /**
      * @var string
@@ -45,13 +48,17 @@ class Rows implements Iterator
     /**
      * @param SheetInterface $sheet
      * @param array $fields
+     * @param int $mode
      */
-    public function __construct(SheetInterface $sheet, array $fields, bool $strictCheck)
-    {
-        $this->sheet       = $sheet;
-        $this->rows        = $sheet->getRowIterator();
-        $this->fields      = $this->formatFields($this->rows, $fields);
-        $this->strictCheck = $strictCheck;
+    public function __construct(
+        SheetInterface $sheet, 
+        array $fields, 
+        int $mode = Rows::TOLERANT_MODE
+    ) {
+        $this->sheet  = $sheet;
+        $this->mode   = $mode;
+        $this->rows   = $sheet->getRowIterator();
+        $this->fields = $this->formatFields($this->rows, $fields);
     }
 
     /**
@@ -149,7 +156,8 @@ class Rows implements Iterator
             $results[] = $columns[$value];
         }
 
-        if ($this->strictCheck && count($columns) !== count($results)) {
+        // 严格模式下字段必须完全匹配
+        if ($this->mode === Rows::STRICT_MODE && count($columns) !== count($results)) {
             throw new RuntimeException($this->fieldErrorMsg);
         }
 
