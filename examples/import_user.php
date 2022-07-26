@@ -3,6 +3,7 @@
 use QT\Import\Task;
 use QT\Import\Handler;
 use QT\Import\Dictionary;
+use QT\Import\Contracts\Template;
 use Illuminate\Validation\Factory;
 use Illuminate\Translation\Translator;
 use Illuminate\Translation\ArrayLoader;
@@ -17,6 +18,7 @@ class UserImport extends Task
         'password'  => 'required|string|min:6|max:20',
         'name'      => 'string|max:10|min:2',
         'phone'     => 'string',
+        'birthday'  => 'required|date_format:Y-m-d',
         'email'     => 'string|email',
     ];
 
@@ -32,7 +34,7 @@ class UserImport extends Task
         'username.required' => '账户名称必填',
     ];
 
-    public function getFields(): array
+    public function getFields(array $input = []): array
     {
         return [
             'username'  => '账户名称',
@@ -40,8 +42,24 @@ class UserImport extends Task
             'password'  => '登陆密码',
             'name'      => '姓名',
             'phone'     => '手机号',
+            'birthday'  => '生日',
             'email'     => '邮箱地址',
         ];
+    }
+
+    public function getImportTemplate(array $input = []): Template
+    {
+        $template = parent::getImportTemplate($input);
+
+        $template->setRuleComment('DateFormat', function ($rule, $params) {
+            return str_replace(
+                [':format', ':example'],
+                [$params[0], date($params[0], time())],
+                '格式为:format,示例::example'
+            );
+        });
+
+        return $template;
     }
 
     protected function insertDB()
@@ -56,7 +74,7 @@ class UserImport extends Task
 
     public function afterImport(array $successful, array $fail)
     {
-        var_dump($successful, $fail);
+        // var_dump($successful, $fail);
     }
 
     public function onReport(int $count)
@@ -92,6 +110,7 @@ $template->fillSimpleData([
         'password'  => '123456',
         'name'      => 'rayson',
         'phone'     => '13012345678',
+        'birthday'  => '2021-12-01',
         'email'     => 'example@example.com',
     ],
     // 错误数据
@@ -101,6 +120,7 @@ $template->fillSimpleData([
         'password'  => '123456',
         'name'      => 'rayson',
         'phone'     => '13012345678',
+        'birthday'  => '2021-12-01',
         'email'     => 'example@example.com',
     ],
 ]);
