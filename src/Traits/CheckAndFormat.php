@@ -144,11 +144,7 @@ trait CheckAndFormat
         }
 
         // 没有填写的字典不做检查,如果有必填需求,由后续的rules定义
-        if ($key === '' || $key === null) {
-            return $key;
-        }
-
-        return false;
+        return $key === '' ? $key : false;
     }
 
     /**

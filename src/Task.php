@@ -277,7 +277,7 @@ abstract class Task
     {
         $errors = [];
         foreach ($this->optional as $field) {
-            if (empty($data[$field]) || empty($this->dictionaries[$field])) {
+            if (!isset($data[$field]) && empty($this->dictionaries[$field])) {
                 continue;
             }
 
