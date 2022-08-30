@@ -2,10 +2,12 @@
 
 namespace QT\Import\Exceptions;
 
+use RuntimeException;
+
 /**
  * FieldException
  * @package QT\Import\Exceptions
  */
-class FieldException extends Exception
+class FieldException extends RuntimeException implements ImportExceptoin
 {
 }

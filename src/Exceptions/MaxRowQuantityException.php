@@ -2,10 +2,12 @@
 
 namespace QT\Import\Exceptions;
 
+use RuntimeException;
+
 /**
  * MaxRowQuantityException
  * @package QT\Import\Exceptions
  */
-class MaxRowQuantityException extends Exception
+class MaxRowQuantityException extends RuntimeException implements ImportExceptoin
 {
 }

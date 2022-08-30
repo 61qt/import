@@ -2,10 +2,12 @@
 
 namespace QT\Import\Exceptions;
 
+use RuntimeException;
+
 /**
  * ValidationException
  * @package QT\Import\Exceptions
  */
-class ValidationException extends Exception
+class ValidationException extends RuntimeException implements ImportExceptoin
 {
 }
