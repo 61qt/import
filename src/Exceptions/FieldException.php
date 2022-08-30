@@ -3,9 +3,9 @@
 namespace QT\Import\Exceptions;
 
 /**
- * SheetNotFoundException
+ * FieldException
  * @package QT\Import\Exceptions
  */
-class SheetNotFoundException extends Exception
+class FieldException extends Exception
 {
 }

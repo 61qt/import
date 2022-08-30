@@ -2,19 +2,18 @@
 
 namespace QT\Import;
 
-use RuntimeException;
 use QT\Import\Contracts\Dictionary;
 use Illuminate\Database\Query\Builder;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use QT\Import\Exceptions\TemplateException;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use Illuminate\Validation\ValidationRuleParser;
 use PhpOffice\PhpSpreadsheet\RichText\RichText;
 use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use QT\Import\Contracts\Template as ContractTemplate;
-use Illuminate\Validation\Concerns\ReplacesAttributes;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
 /**
@@ -215,7 +214,7 @@ class Template implements ContractTemplate
         }
 
         if (!is_iterable($source)) {
-            throw new RuntimeException('无效的数据源');
+            throw new TemplateException('无效的数据源');
         }
 
         $sheet = $this->spreadsheet->getSheet($sheetIndex);
@@ -341,7 +340,7 @@ class Template implements ContractTemplate
     protected function generateOptionalColumns()
     {
         if (null === $this->importSheetIndex) {
-            throw new RuntimeException('只有在导入表头加载完成后才允许生成字典');
+            throw new TemplateException('只有在导入表头加载完成后才允许生成字典');
         }
 
         $maxLine   = 0;
@@ -443,7 +442,7 @@ class Template implements ContractTemplate
     protected function generateExampleSheet()
     {
         if (null === $this->importSheetIndex) {
-            throw new RuntimeException('只有在导入表头加载完成后才允许生成示例');
+            throw new TemplateException('只有在导入表头加载完成后才允许生成示例');
         }
 
         if (empty($this->example)) {

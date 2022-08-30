@@ -2,7 +2,6 @@
 
 namespace QT\Import\Traits;
 
-use RuntimeException;
 use Illuminate\Container\Container;
 use QT\Import\Contracts\Dictionary;
 use Illuminate\Database\Query\Expression;
@@ -197,7 +196,7 @@ trait CheckAndFormat
      *
      * @param array $errors
      * @param int $line
-     * @throws RuntimeException
+     * @throws ValidationException
      */
     protected function throwNotEmpty(array $errors, int $line)
     {

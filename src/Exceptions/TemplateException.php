@@ -3,9 +3,9 @@
 namespace QT\Import\Exceptions;
 
 /**
- * SheetNotFoundException
+ * TemplateException
  * @package QT\Import\Exceptions
  */
-class SheetNotFoundException extends Exception
+class TemplateException extends Exception
 {
 }

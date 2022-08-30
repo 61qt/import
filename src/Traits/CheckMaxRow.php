@@ -2,7 +2,7 @@
 
 namespace QT\Import\Traits;
 
-use RuntimeException;
+use QT\Import\Exceptions\MaxRowQuantityException;
 
 trait CheckMaxRow
 {
@@ -25,12 +25,12 @@ trait CheckMaxRow
      * 检查是否超过最大行限制
      * 
      * @param int $line
-     * @throws RuntimeException
+     * @throws MaxRowQuantityException
      */
     protected function checkMaxRow(int $line)
     {
         if ($line > $this->maxRowQuantity + $this->skipLine) {
-            throw new RuntimeException($this->getMaxRowQuantityError());
+            throw new MaxRowQuantityException($this->getMaxRowQuantityError());
         }
     }
 

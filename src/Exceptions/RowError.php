@@ -4,15 +4,14 @@ namespace QT\Import\Exceptions;
 
 use DateTime;
 use Throwable;
-use RuntimeException;
 use Illuminate\Support\Arr;
 use Illuminate\Database\Query\Expression;
 
 /**
- * ImportError
+ * RowError
  * @package QT\Import\Exceptions
  */
-class ImportError extends RuntimeException
+class RowError extends Exception implements ImportExceptoin
 {
     /**
      * 错误行数据

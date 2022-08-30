@@ -2,10 +2,12 @@
 
 namespace QT\Import\Exceptions;
 
+use Throwable;
+
 /**
- * SheetNotFoundException
+ * ImportExceptoin
  * @package QT\Import\Exceptions
  */
-class SheetNotFoundException extends Exception
+interface ImportExceptoin extends Throwable
 {
 }

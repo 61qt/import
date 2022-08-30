@@ -4,14 +4,13 @@ namespace QT\Import;
 
 use DateTime;
 use Throwable;
-use RuntimeException;
 use QT\Import\Traits\Events;
 use QT\Import\Traits\CheckMaxRow;
 use QT\Import\Traits\WithTemplate;
+use QT\Import\Exceptions\RowError;
 use Illuminate\Database\Connection;
 use QT\Import\Traits\RowsValidator;
 use QT\Import\Traits\CheckAndFormat;
-use QT\Import\Exceptions\ImportError;
 use Illuminate\Database\Eloquent\Model;
 use QT\Import\Traits\CheckTableDuplicated;
 use QT\Import\Exceptions\ValidationException;
@@ -76,7 +75,7 @@ abstract class Task
     /**
      * 错误行
      *
-     * @var array<ImportError>
+     * @var array<RowError>
      */
     protected $errors = [];
 
@@ -250,7 +249,7 @@ abstract class Task
                 }
 
                 // 整合错误信息文档
-                $this->errors[$line] = new ImportError($row, $line, $e);
+                $this->errors[$line] = new RowError($row, $line, $e);
             }
 
             $now = time();
@@ -271,7 +270,7 @@ abstract class Task
      * @param array $data
      * @param int $line
      * @return array
-     * @throws RuntimeException
+     * @throws ValidationException
      */
     protected function checkAndFormatRow(array $data, int $line): array
     {
@@ -311,7 +310,7 @@ abstract class Task
         foreach ($this->validateRows($this->rows) as $line => $errMsg) {
             $row = $this->originalRows[$line];
 
-            $this->errors[$line] = new ImportError(
+            $this->errors[$line] = new RowError(
                 $row,
                 $line,
                 new ValidationException(join('; ', $errMsg))

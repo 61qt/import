@@ -121,7 +121,7 @@ class Equal extends ValidateModels
             return $relation->getQualifiedLocalKeyName();
         }
 
-        throw new RuntimeException("无法从Relation上获取关联字段");
+        throw new RuntimeException('无法从Relation上获取关联字段');
     }
 
     /**

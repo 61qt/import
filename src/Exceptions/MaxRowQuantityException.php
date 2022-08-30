@@ -3,9 +3,9 @@
 namespace QT\Import\Exceptions;
 
 /**
- * SheetNotFoundException
+ * MaxRowQuantityException
  * @package QT\Import\Exceptions
  */
-class SheetNotFoundException extends Exception
+class MaxRowQuantityException extends Exception
 {
 }

@@ -3,10 +3,10 @@
 namespace QT\Import;
 
 use Iterator;
-use RuntimeException;
 use Box\Spout\Common\Entity\Row;
 use Box\Spout\Reader\SheetInterface;
 use Box\Spout\Reader\IteratorInterface;
+use QT\Import\Exceptions\FieldException;
 
 /**
  * Rows
@@ -51,8 +51,8 @@ class Rows implements Iterator
      * @param int $mode
      */
     public function __construct(
-        SheetInterface $sheet, 
-        array $fields, 
+        SheetInterface $sheet,
+        array $fields,
         int $mode = Rows::TOLERANT_MODE
     ) {
         $this->sheet  = $sheet;
@@ -150,7 +150,7 @@ class Rows implements Iterator
             }
 
             if (empty($columns[$value])) {
-                throw new RuntimeException($this->fieldErrorMsg);
+                throw new FieldException($this->fieldErrorMsg);
             }
 
             $results[] = $columns[$value];
@@ -158,7 +158,7 @@ class Rows implements Iterator
 
         // 严格模式下字段必须完全匹配
         if ($this->mode === Rows::STRICT_MODE && count($columns) !== count($results)) {
-            throw new RuntimeException($this->fieldErrorMsg);
+            throw new FieldException($this->fieldErrorMsg);
         }
 
         return $results;
