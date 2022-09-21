@@ -4,6 +4,7 @@ namespace QT\Import\Rules;
 
 use RuntimeException;
 use Illuminate\Support\Arr;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -183,8 +184,14 @@ class Equal extends ValidateModels
             return [true, null];
         }
 
-        // 转换为数组,防止Arr::get()时通过访问属性直接拿到model的关联
-        return Arr::get($models->get($key)->toArray(), $field) == $row[$alias]
+        $data = $models->get($key);
+        // 防止Arr::get()时自动加载关联数据
+        // 提前将可以访问的内容取出来合并为数组
+        if ($data instanceof Model) {
+            $data = array_merge($data->getAttributes(), $data->getRelations());
+        }
+
+        return Arr::get($data, $field) == $row[$alias]
             ? [true, null]
             : [false, $errMsg];
     }
