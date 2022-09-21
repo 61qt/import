@@ -4,6 +4,11 @@ namespace QT\Import\Traits;
 
 use QT\Import\Contracts\Validatable;
 
+/**
+ * 导入行批量校验
+ *
+ * @package QT\Import\Traits
+ */
 trait RowsValidator
 {
     /**

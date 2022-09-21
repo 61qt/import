@@ -6,6 +6,7 @@ use RuntimeException;
 
 /**
  * MaxRowQuantityException
+ * 
  * @package QT\Import\Exceptions
  */
 class MaxRowQuantityException extends RuntimeException implements ImportExceptoin

@@ -10,6 +10,11 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use QT\Import\Contracts\Template as ContractTemplate;
 use Illuminate\Validation\Concerns\ReplacesAttributes;
 
+/**
+ * 导入模板
+ *
+ * @package QT\Import\Traits
+ */
 trait WithTemplate
 {
     use ReplacesAttributes;

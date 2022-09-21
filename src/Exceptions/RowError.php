@@ -10,6 +10,7 @@ use Illuminate\Database\Query\Expression;
 
 /**
  * RowError
+ * 
  * @package QT\Import\Exceptions
  */
 class RowError extends RuntimeException implements ImportExceptoin

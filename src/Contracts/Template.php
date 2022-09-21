@@ -5,7 +5,8 @@ namespace QT\Import\Contracts;
 use Illuminate\Database\Query\Builder;
 
 /**
- * Template
+ * 导入模板
+ * 
  * @package QT\Import\Contracts
  */
 interface Template

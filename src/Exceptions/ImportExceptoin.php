@@ -6,6 +6,7 @@ use Throwable;
 
 /**
  * ImportExceptoin
+ * 
  * @package QT\Import\Exceptions
  */
 interface ImportExceptoin extends Throwable

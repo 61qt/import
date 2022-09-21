@@ -4,6 +4,11 @@ namespace QT\Import\Traits;
 
 use Throwable;
 
+/**
+ * 触发器
+ *
+ * @package QT\Import\Traits
+ */
 trait Events
 {
     /**

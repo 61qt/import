@@ -3,7 +3,8 @@
 namespace QT\Import\Contracts;
 
 /**
- * WithMultipleSheets
+ * 支持多sheet导入
+ * 
  * @package QT\Import\Contracts
  */
 interface WithMultipleSheets

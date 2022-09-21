@@ -17,7 +17,7 @@ use QT\Import\Contracts\Template as ContractTemplate;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
 /**
- * Import Template
+ * Excel导入模板
  *
  * @package QT\Import
  */

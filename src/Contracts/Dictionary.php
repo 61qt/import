@@ -8,7 +8,6 @@ namespace QT\Import\Contracts;
  * key为excel里填写的值
  * value是插入到数据库的值
  * 
- * Dictionary
  * @package QT\Import\Contracts
  */
 interface Dictionary

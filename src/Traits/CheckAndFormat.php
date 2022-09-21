@@ -9,6 +9,11 @@ use Illuminate\Contracts\Validation\Factory;
 use QT\Import\Exceptions\ValidationException;
 use Box\Spout\Writer\Common\Helper\CellHelper;
 
+/**
+ * 给每一行进行校验并格式化为期望的数据
+ *
+ * @package QT\Import\Traits
+ */
 trait CheckAndFormat
 {
     /**

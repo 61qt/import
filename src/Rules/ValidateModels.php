@@ -10,6 +10,7 @@ use Illuminate\Database\Query\Builder as BaseBuilder;
 
 /**
  * ValidateModels
+ * 
  * @package QT\Import\Rules
  */
 abstract class ValidateModels implements Validatable
@@ -290,7 +291,7 @@ abstract class ValidateModels implements Validatable
     protected function formatErrorFields(array $fields): string
     {
         return collect(array_keys($fields))
-            ->map(fn ($field)    => $this->getFieldDisplayName($field))
+            ->map(fn ($field) => $this->getFieldDisplayName($field))
             ->filter(fn ($field) => !empty($field))
             ->implode(', ');
     }

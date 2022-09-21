@@ -4,6 +4,11 @@ namespace QT\Import\Traits;
 
 use QT\Import\Exceptions\MaxRowQuantityException;
 
+/**
+ * 可导入最大行校验
+ *
+ * @package QT\Import\Traits
+ */
 trait CheckMaxRow
 {
     /**
@@ -23,7 +28,7 @@ trait CheckMaxRow
 
     /**
      * 检查是否超过最大行限制
-     * 
+     *
      * @param int $line
      * @throws MaxRowQuantityException
      */

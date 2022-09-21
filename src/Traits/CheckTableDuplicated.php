@@ -8,6 +8,8 @@ use QT\Import\Exceptions\ValidationException;
 
 /**
  * 检查同一个列表内数据是否重复
+ *
+ * @package QT\Import\Traits
  */
 trait CheckTableDuplicated
 {
