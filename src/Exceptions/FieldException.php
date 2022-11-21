@@ -9,6 +9,6 @@ use RuntimeException;
  * 
  * @package QT\Import\Exceptions
  */
-class FieldException extends RuntimeException implements ImportExceptoin
+class FieldException extends RuntimeException implements ImportException
 {
 }

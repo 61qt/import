@@ -5,10 +5,10 @@ namespace QT\Import\Exceptions;
 use Throwable;
 
 /**
- * ImportExceptoin
+ * ImportException
  * 
  * @package QT\Import\Exceptions
  */
-interface ImportExceptoin extends Throwable
+interface ImportException extends Throwable
 {
 }

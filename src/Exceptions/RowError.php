@@ -13,7 +13,7 @@ use Illuminate\Database\Query\Expression;
  * 
  * @package QT\Import\Exceptions
  */
-class RowError extends RuntimeException implements ImportExceptoin
+class RowError extends RuntimeException implements ImportException
 {
     /**
      * 错误行数据

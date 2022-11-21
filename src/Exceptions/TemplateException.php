@@ -9,6 +9,6 @@ use RuntimeException;
  * 
  * @package QT\Import\Exceptions
  */
-class TemplateException extends RuntimeException implements ImportExceptoin
+class TemplateException extends RuntimeException implements ImportException
 {
 }

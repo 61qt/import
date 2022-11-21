@@ -9,6 +9,6 @@ use RuntimeException;
  * 
  * @package QT\Import\Exceptions
  */
-class SheetNotFoundException extends RuntimeException implements ImportExceptoin
+class SheetNotFoundException extends RuntimeException implements ImportException
 {
 }
