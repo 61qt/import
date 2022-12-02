@@ -290,10 +290,16 @@ abstract class ValidateModels implements Validatable
      */
     protected function formatErrorFields(array $fields): string
     {
-        return collect(array_keys($fields))
-            ->map(fn ($field) => $this->getFieldDisplayName($field))
-            ->filter(fn ($field) => !empty($field))
-            ->implode(', ');
+        $result = '';
+        foreach ($fields as $field => $_) {
+            $displayName = $this->getFieldDisplayName($field);
+
+            if (!empty($displayName)) {
+                $result .= "{$displayName}, ";
+            }
+        }
+
+        return substr($result, 0, -2);
     }
 
     /**

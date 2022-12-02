@@ -19,8 +19,8 @@ use Illuminate\Database\Query\Builder as BaseBuilder;
  *     laravel sql builder,可以提前设置部分条件再传入
  * attributes:
  *     进行筛选的字段,会把每行指定的字段作为where条件填入sql
- * allowNullFields:
- *     根据筛选结果进行对比的字段
+ * nullable:
+ *     允许为空的字段
  * wheres:
  *     默认的筛选条件,每一行单独注入,与同一行的筛选条件为and的关系
  * ignoreFields:
@@ -48,16 +48,29 @@ use Illuminate\Database\Query\Builder as BaseBuilder;
 class ExistsAndUnique extends ValidateModels
 {
     /**
+     * 允许为空的字段
+     * 
      * @var array
      */
-    protected $allowNullFields = [];
+    protected $nullable = [];
 
     /**
+     * 导入时的列名
+     * 
+     * @var array
+     */
+    protected $columns = [];
+
+    /**
+     * 不存在时的错误
+     * 
      * @var string
      */
     protected $notFoundMessage = '不存在的数据';
 
     /**
+     * 重复时的错误
+     * 
      * @var string
      */
     protected $notUniqueMessage = '相同的数据';
@@ -65,7 +78,7 @@ class ExistsAndUnique extends ValidateModels
     /**
      * @param Builder|BaseBuilder $query
      * @param array $attributes
-     * @param array $allowNullFields
+     * @param array $nullable
      * @param array $wheres
      * @param array $ignoreFields
      * @param array $aliases
@@ -75,7 +88,7 @@ class ExistsAndUnique extends ValidateModels
     public function __construct(
         Builder | BaseBuilder $query,
         array $attributes,
-        array $allowNullFields = [],
+        array $nullable = [],
         array $wheres = [],
         array $ignoreFields = [],
         array $aliases = [],
@@ -84,11 +97,14 @@ class ExistsAndUnique extends ValidateModels
     ) {
         parent::__construct($query, $attributes, $wheres, $ignoreFields, $aliases);
 
-        foreach ($allowNullFields as $field) {
-            $this->allowNullFields[$field] = $this->aliases[$field] ?? $field;
+        foreach ($nullable as $field) {
+            $column = $this->aliases[$field] ?? $field;
+
+            $this->select[]         = $column;
+            $this->columns[]        = $field;
+            $this->nullable[$field] = $column;
         }
 
-        $this->select           = array_values($this->allowNullFields);
         $this->notFoundMessage  = $notFoundMessage ?: $this->notFoundMessage;
         $this->notUniqueMessage = $notUniqueMessage ?: $this->notUniqueMessage;
     }
@@ -107,7 +123,7 @@ class ExistsAndUnique extends ValidateModels
             $query->where($field, $row[$alias]);
         }
 
-        foreach ($this->allowNullFields as $alias => $field) {
+        foreach ($this->nullable as $alias => $field) {
             if (!empty($row[$alias])) {
                 $query->where($field, $row[$alias]);
             }
@@ -154,7 +170,7 @@ class ExistsAndUnique extends ValidateModels
      */
     protected function checkGroup(Collection $groups, string $key, array $row): array
     {
-        $values = $this->getRowValues($row, array_keys($this->allowNullFields));
+        $values = $this->getRowValues($row, $this->columns);
 
         // 关键词对不上返回不存在
         if (!$groups->has($key)) {
@@ -172,7 +188,7 @@ class ExistsAndUnique extends ValidateModels
         }
 
         $results = $group->filter(function ($models) use ($values) {
-            return empty(array_diff($values, $models->only($this->allowNullFields)));
+            return empty(array_diff($values, $models->only($this->select)));
         });
 
         // 关键词对上,但是其余属性不同的数据,返回不存在

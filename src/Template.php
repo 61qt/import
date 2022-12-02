@@ -343,11 +343,14 @@ class Template implements ContractTemplate
             throw new TemplateException('只有在导入表头加载完成后才允许生成字典');
         }
 
+        $index     = 0;
         $maxLine   = 0;
         $dictIndex = 0;
         $columns   = [];
         $sheet     = $this->spreadsheet->getSheet($this->importSheetIndex);
-        foreach (array_keys($this->columns) as $columnIndex => $column) {
+        foreach ($this->columns as $column => $_) {
+            $index++;
+
             if (empty($this->dictionaries[$column])) {
                 continue;
             }
@@ -380,7 +383,7 @@ class Template implements ContractTemplate
                     count($columns[$column]) + 1
                 ));
 
-            $column = Coordinate::stringFromColumnIndex($columnIndex + 1);
+            $column = Coordinate::stringFromColumnIndex($index);
             // 给1~200000行设置下拉选项
             $sheet->setDataValidation("{$column}2:{$column}200000", $validation);
         }
@@ -411,7 +414,7 @@ class Template implements ContractTemplate
 
         // 生成首行信息
         $first = [];
-        foreach (array_keys($columns) as $column) {
+        foreach ($columns as $column => $_) {
             $first[] = $this->columns[$column];
         }
 
