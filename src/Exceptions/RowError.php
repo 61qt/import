@@ -10,7 +10,7 @@ use Illuminate\Database\Query\Expression;
 
 /**
  * RowError
- * 
+ *
  * @package QT\Import\Exceptions
  */
 class RowError extends RuntimeException implements ImportException
@@ -23,21 +23,21 @@ class RowError extends RuntimeException implements ImportException
     protected $row;
 
     /**
-     * 行号
+     * 错误行号
      *
      * @var int
      */
-    protected $line;
+    protected $errLine;
 
     /**
      * @param array $row
-     * @param int $line
+     * @param int $errLine
      * @param Throwable $previous
      */
-    public function __construct(array $row, int $line, Throwable $previous)
+    public function __construct(array $row, int $errLine, Throwable $previous)
     {
-        $this->row  = $row;
-        $this->line = $line;
+        $this->row     = $row;
+        $this->errLine = $errLine;
         // 使用将原版错误进行包装
         parent::__construct($previous->getMessage(), 0, $previous);
     }
@@ -82,8 +82,8 @@ class RowError extends RuntimeException implements ImportException
      *
      * @return int
      */
-    public function getErrorLine()
+    public function getErrorLine(): int
     {
-        return $this->line;
+        return $this->errLine;
     }
 }
