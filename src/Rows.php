@@ -3,10 +3,13 @@
 namespace QT\Import;
 
 use Iterator;
+use SplFileInfo;
 use Box\Spout\Common\Entity\Row;
 use Box\Spout\Reader\SheetInterface;
 use Box\Spout\Reader\IteratorInterface;
 use QT\Import\Exceptions\FieldException;
+use Box\Spout\Reader\Common\Creator\ReaderFactory;
+use Box\Spout\Common\Manager\OptionsManagerInterface;
 
 /**
  * Rows
@@ -41,24 +44,71 @@ class Rows implements Iterator
     protected $mode;
 
     /**
+     * 字段错误提示语
+     *
      * @var string
      */
     protected $fieldErrorMsg = '导入模板与系统提供的模板不一致，请重新导入';
 
     /**
-     * @param SheetInterface $sheet
+     * 默认跳过的行数
+     *
+     * @var integer
+     */
+    protected $skipLine = 0;
+
+    /**
+     * @param string $filename
      * @param array $fields
      * @param int $mode
+     * @param array $options
      */
     public function __construct(
-        SheetInterface $sheet,
+        string $filename,
         array $fields,
-        int $mode = Rows::TOLERANT_MODE
+        int $mode = Rows::TOLERANT_MODE,
+        protected array $options = [],
     ) {
-        $this->sheet  = $sheet;
         $this->mode   = $mode;
-        $this->rows   = $sheet->getRowIterator();
+        $this->rows   = $this->getSheet($filename)->getRowIterator();
         $this->fields = $this->formatFields($this->rows, $fields);
+
+        if (isset($this->options['skip'])) {
+            $this->skipLine = $this->options['skip'];
+        }
+    }
+
+    /**
+     * 读取文件内容
+     *
+     * @param string $filename
+     * @return SheetInterface
+     */
+    protected function getSheet(string $filename): SheetInterface
+    {
+        $reader = ReaderFactory::createFromType(
+            (new SplFileInfo($filename))->getExtension()
+        );
+
+        if (
+            isset($this->options['read']) &&
+            $reader instanceof OptionsManagerInterface
+        ) {
+            foreach ($this->options['read'] as $name => $value) {
+                $reader->setOption($name, $value);
+            }
+        }
+
+        $reader->open($filename);
+        $sheets = $reader->getSheetIterator();
+        $sheets->rewind();
+        // 允许指定sheet
+        $skip = $this->options['sheet_index'] ?? 0;
+        while ($skip-- > 0) {
+            $sheets->next();
+        }
+
+        return $sheets->current();
     }
 
     /**
@@ -67,6 +117,10 @@ class Rows implements Iterator
     public function rewind(): void
     {
         $this->rows->rewind();
+        for ($i = 0; $i < $this->skipLine; $i++) {
+            $this->rows->next();
+        }
+
         // 默认跳过首行内容
         $this->next();
     }
@@ -141,6 +195,10 @@ class Rows implements Iterator
         $columns = array_flip($fields);
 
         $rows->rewind();
+        for ($i = 0; $i < $this->skipLine; $i++) {
+            $rows->next();
+        }
+
         foreach ($rows->current()->getCells() as $value) {
             $value = $value->getValue();
             $pos   = strpos($value, '(');
