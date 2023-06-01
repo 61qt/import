@@ -69,13 +69,13 @@ class Rows implements Iterator
         int $mode = Rows::TOLERANT_MODE,
         protected array $options = [],
     ) {
-        $this->mode   = $mode;
-        $this->rows   = $this->getSheet($filename)->getRowIterator();
-        $this->fields = $this->formatFields($this->rows, $fields);
-
         if (isset($this->options['skip'])) {
             $this->skipLine = $this->options['skip'];
         }
+
+        $this->mode   = $mode;
+        $this->rows   = $this->getSheet($filename)->getRowIterator();
+        $this->fields = $this->formatFields($this->rows, $fields);
     }
 
     /**
