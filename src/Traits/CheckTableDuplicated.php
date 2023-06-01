@@ -115,6 +115,17 @@ trait CheckTableDuplicated
             $values[] = $data[$field];
         }
 
+        return $this->formatTableDuplicatedValue($values);
+    }
+
+    /**
+     * 格式化需要进行全表唯一检查的值
+     *
+     * @param array $values
+     * @return array
+     */
+    protected function formatTableDuplicatedValue(array $values): array
+    {
         return $values;
     }
 }
