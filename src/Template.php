@@ -267,9 +267,7 @@ class Template implements ContractTemplate
      */
     protected function generateFirstColumn(Worksheet $sheet)
     {
-        $currentColumn   = 0;
-        $coordinateIndex = empty($sheet->getCell('A1')->getFormattedValue()) ? 1 : 2;
-
+        $currentColumn = 0;
         foreach ($this->columns as $column => $displayName) {
             $coordinate = Coordinate::stringFromColumnIndex(++$currentColumn);
 
@@ -282,9 +280,13 @@ class Template implements ContractTemplate
                 }
             }
 
-            $coordinate = $coordinate . $coordinateIndex;
-            $sheet->getCell($coordinate)->setValue($displayName);
+            if (!empty($sheet->getCell('A1')->getFormattedValue())) {
+                $coordinate = "{$coordinate}2";
+            } else {
+                $coordinate = "{$coordinate}1";
+            }
 
+            $sheet->getCell($coordinate)->setValue($displayName);
             // 填写字段备注信息
             if (isset($this->remarks[$column])) {
                 $text = new RichText();
