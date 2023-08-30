@@ -6,8 +6,8 @@ use DateTime;
 use Throwable;
 use QT\Import\Traits\Events;
 use QT\Import\Traits\CheckMaxRow;
-use QT\Import\Exceptions\RowError;
 use QT\Import\Traits\WithTemplate;
+use QT\Import\Exceptions\RowError;
 use Illuminate\Database\Connection;
 use QT\Import\Traits\RowsValidator;
 use QT\Import\Traits\CheckAndFormat;
@@ -82,7 +82,6 @@ abstract class Task
     /**
      * 需要格式化日期的字段
      * 如 'birthday' => 'Ymd'
-     *
      * @var array
      */
     protected $fieldDateFormats = [];
@@ -119,15 +118,10 @@ abstract class Task
 
     /**
      * 字段校验模式(默认使用宽松模式)
-     *
+     * 
      * @var int
      */
     protected $fieldsCheckMode = Rows::TOLERANT_MODE;
-
-    /**
-     * 导入模板的填写须知
-     */
-    protected $importTemplateFile = '';
 
     /**
      * 获取导入字段
@@ -139,7 +133,7 @@ abstract class Task
 
     /**
      * 获取字段校验模式
-     *
+     * 
      * @param array $input
      * @return int
      */
@@ -275,8 +269,8 @@ abstract class Task
      *
      * @param array $data
      * @param int $line
-     * @throws ValidationException
      * @return array
+     * @throws ValidationException
      */
     protected function checkAndFormatRow(array $data, int $line): array
     {

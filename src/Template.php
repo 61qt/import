@@ -280,24 +280,18 @@ class Template implements ContractTemplate
                 }
             }
 
-            if (!empty($sheet->getCell('A1')->getFormattedValue())) {
-                $coordinate = "{$coordinate}2";
-            } else {
-                $coordinate = "{$coordinate}1";
-            }
-
-            $sheet->getCell($coordinate)->setValue($displayName);
+            $sheet->getCell("{$coordinate}1")->setValue($displayName);
             // 填写字段备注信息
             if (isset($this->remarks[$column])) {
                 $text = new RichText();
                 $text->createText($this->remarks[$column]);
 
-                $sheet->getComment($coordinate)->setText($text);
+                $sheet->getComment("{$coordinate}1")->setText($text);
             }
 
             foreach ($this->ruleStyles as $rule => $style) {
                 if (array_key_exists($rule, $rules)) {
-                    $sheet->getStyle($coordinate)->applyFromArray($style);
+                    $sheet->getStyle("{$coordinate}1")->applyFromArray($style);
                 }
             }
         }
@@ -354,12 +348,6 @@ class Template implements ContractTemplate
         $dictIndex = 0;
         $columns   = [];
         $sheet     = $this->spreadsheet->getSheet($this->importSheetIndex);
-
-        $columnIndex = 2;
-        if (!empty($sheet->getCell('A1')->getFormattedValue())) {
-            $columnIndex = 3;
-        }
-
         foreach ($this->columns as $column => $_) {
             $index++;
 
@@ -388,7 +376,7 @@ class Template implements ContractTemplate
                 ->setShowErrorMessage(true)
                 ->setShowDropDown(true)
                 ->setErrorTitle('输入错误')
-                ->setError('必须在可选的范围内')
+                ->setError("必须在可选的范围内")
                 ->setFormula1($this->getFormula(
                     $this->dictSheetTitle,
                     Coordinate::stringFromColumnIndex($dictIndex),
@@ -397,7 +385,7 @@ class Template implements ContractTemplate
 
             $column = Coordinate::stringFromColumnIndex($index);
             // 给1~200000行设置下拉选项
-            $sheet->setDataValidation("{$column}{$columnIndex}:{$column}200000", $validation);
+            $sheet->setDataValidation("{$column}2:{$column}200000", $validation);
         }
 
         $this->generateDictSheet($columns, $maxLine, $this->dictSheetTitle);
@@ -431,7 +419,6 @@ class Template implements ContractTemplate
         }
 
         $rows = [$first];
-
         for ($line = 0; $line < $maxLine; $line++) {
             $row = [];
             foreach ($columns as $column => $dict) {
