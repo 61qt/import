@@ -19,14 +19,6 @@ trait CheckMaxRow
     protected $maxRowQuantity = 5000;
 
     /**
-     * 检查行数时会跳过的行数
-     * 默认跳过1行,因为首行为列名,第二行才是要导入数据
-     *
-     * @var int
-     */
-    protected $skipLine = 1;
-
-    /**
      * 检查是否超过最大行限制
      *
      * @param int $line
@@ -34,7 +26,7 @@ trait CheckMaxRow
      */
     protected function checkMaxRow(int $line)
     {
-        if ($line > $this->maxRowQuantity + $this->skipLine) {
+        if ($line > $this->maxRowQuantity) {
             throw new MaxRowQuantityException($this->getMaxRowQuantityError());
         }
     }

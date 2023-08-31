@@ -218,13 +218,15 @@ abstract class Task
      */
     protected function processRows(iterable $rows)
     {
+        $currentLine = 1;
         foreach ($rows as $line => $row) {
             // 整行都是空的就忽略
             if (empty($row)) {
                 continue;
             }
 
-            $this->checkMaxRow($line);
+            // 根据具体有数据的行来判断
+            $this->checkMaxRow($currentLine++);
 
             // 提前格式化datetime类型
             foreach ($this->fieldDateFormats as $field => $format) {
