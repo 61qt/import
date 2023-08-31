@@ -12,6 +12,14 @@ use Illuminate\Database\Query\Builder;
 interface Template
 {
     /**
+     * 设置模板文件
+     *
+     * @param string $filename
+     * @param int $sheetIndex
+     */
+    public function setTemplateFile(string $filename, int $sheetIndex = 0);
+
+    /**
      * 设置导入列名
      *
      * @param array $columns
