@@ -10,6 +10,7 @@ use Box\Spout\Reader\IteratorInterface;
 use QT\Import\Exceptions\FieldException;
 use Box\Spout\Reader\Common\Creator\ReaderFactory;
 use Box\Spout\Common\Manager\OptionsManagerInterface;
+use Box\Spout\Common\Type;
 
 /**
  * Rows
@@ -68,9 +69,14 @@ class Rows implements Iterator
      */
     public static function createFrom(string $filename, Task $task, array $input = [], array $options = [])
     {
-        $reader = ReaderFactory::createFromType(
-            (new SplFileInfo($filename))->getExtension()
-        );
+        $type = Type::XLSX;
+        $file = new SplFileInfo($filename);
+
+        if ($file->getExtension() !== "") {
+            $type = $file->getExtension();
+        }
+
+        $reader = ReaderFactory::createFromType($type);
 
         if (
             isset($options['read']) &&
