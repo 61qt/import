@@ -13,6 +13,7 @@ use Illuminate\Validation\ValidationRuleParser;
 use PhpOffice\PhpSpreadsheet\RichText\RichText;
 use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\CellIterator;
 use QT\Import\Contracts\Template as ContractTemplate;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
@@ -99,6 +100,13 @@ class Template implements ContractTemplate
      * @var array
      */
     protected $ruleStyles = [];
+
+    /**
+     * 需要跳过的行数,仅在设置了导入模板后生效,跳过模板原内容
+     *
+     * @var integer
+     */
+    protected $skipRow = 0;
 
     /**
      * @param Spreadsheet $spreadsheet
@@ -196,6 +204,29 @@ class Template implements ContractTemplate
     }
 
     /**
+     * 设置模板文件
+     *
+     * @param string $filename
+     * @param int $sheetIndex
+     */
+    public function setTemplateFile(string $filename, int $sheetIndex = 0)
+    {
+        $spreadsheet = IOFactory::createReaderForFile($filename)->load($filename);
+
+        // 计算要跳过的行数
+        $sheet = $spreadsheet->getSheet($sheetIndex);
+        $flag  = CellIterator::TREAT_NULL_VALUE_AS_EMPTY_CELL | CellIterator::TREAT_EMPTY_STRING_AS_EMPTY_CELL;
+        foreach ($sheet->getRowIterator() as $line => $row) {
+            if (!$row->isEmpty($flag)) {
+                $this->skipRow = $line;
+            }
+        }
+
+        // 复制模板文件到导入模板上
+        $this->spreadsheet->addExternalSheet($sheet, $this->importSheetIndex);
+    }
+
+    /**
      * 给导入模板填入基础数据
      *
      * @param Builder|iterable $source
@@ -219,7 +250,7 @@ class Template implements ContractTemplate
 
         $sheet = $this->spreadsheet->getSheet($sheetIndex);
         // 填充数据
-        $this->addStrictStringRows($sheet, $source, $startColumn, $startRow);
+        $this->addStrictStringRows($sheet, $source, $startColumn, $startRow + $this->skipRow);
     }
 
     /**
@@ -268,6 +299,7 @@ class Template implements ContractTemplate
     protected function generateFirstColumn(Worksheet $sheet)
     {
         $currentColumn = 0;
+        $currentLine   = $this->skipRow + 1;
         foreach ($this->columns as $column => $displayName) {
             $coordinate = Coordinate::stringFromColumnIndex(++$currentColumn);
 
@@ -280,18 +312,18 @@ class Template implements ContractTemplate
                 }
             }
 
-            $sheet->getCell("{$coordinate}1")->setValue($displayName);
+            $sheet->getCell("{$coordinate}{$currentLine}")->setValue($displayName);
             // 填写字段备注信息
             if (isset($this->remarks[$column])) {
                 $text = new RichText();
                 $text->createText($this->remarks[$column]);
 
-                $sheet->getComment("{$coordinate}1")->setText($text);
+                $sheet->getComment("{$coordinate}{$currentLine}")->setText($text);
             }
 
             foreach ($this->ruleStyles as $rule => $style) {
                 if (array_key_exists($rule, $rules)) {
-                    $sheet->getStyle("{$coordinate}1")->applyFromArray($style);
+                    $sheet->getStyle("{$coordinate}{$currentLine}")->applyFromArray($style);
                 }
             }
         }
@@ -496,7 +528,9 @@ class Template implements ContractTemplate
         foreach ($source as $row) {
             $currentColumn = $startColumn;
             foreach ($row as $value) {
-                $sheet->getCellByColumnAndRow(++$currentColumn, $startRow)
+                $coordinate = Coordinate::stringFromColumnIndex(++$currentColumn);
+
+                $sheet->getCell("{$coordinate}{$startRow}")
                     ->setValueExplicit($value, DataType::TYPE_STRING);
             }
             ++$startRow;

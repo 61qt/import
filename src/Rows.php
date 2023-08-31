@@ -41,7 +41,14 @@ class Rows implements Iterator
      *
      * @var bool
      */
-    protected $mode;
+    protected $mode = Rows::TOLERANT_MODE;
+
+    /**
+     * 默认跳过的行数
+     *
+     * @var integer
+     */
+    protected $skipRow = 0;
 
     /**
      * 字段错误提示语
@@ -51,50 +58,25 @@ class Rows implements Iterator
     protected $fieldErrorMsg = '导入模板与系统提供的模板不一致，请重新导入';
 
     /**
-     * 默认跳过的行数
+     * Undocumented function
      *
-     * @var integer
-     */
-    protected $skipLine = 0;
-
-    /**
      * @param string $filename
-     * @param array $fields
-     * @param int $mode
+     * @param Task $task
+     * @param array $input
      * @param array $options
+     * @return self
      */
-    public function __construct(
-        string $filename,
-        array $fields,
-        int $mode = Rows::TOLERANT_MODE,
-        protected array $options = [],
-    ) {
-        if (isset($this->options['skip'])) {
-            $this->skipLine = $this->options['skip'];
-        }
-
-        $this->mode   = $mode;
-        $this->rows   = $this->getSheet($filename)->getRowIterator();
-        $this->fields = $this->formatFields($this->rows, $fields);
-    }
-
-    /**
-     * 读取文件内容
-     *
-     * @param string $filename
-     * @return SheetInterface
-     */
-    protected function getSheet(string $filename): SheetInterface
+    public static function createFrom(string $filename, Task $task, array $input = [], array $options = [])
     {
         $reader = ReaderFactory::createFromType(
             (new SplFileInfo($filename))->getExtension()
         );
 
         if (
-            isset($this->options['read']) &&
+            isset($options['read']) &&
             $reader instanceof OptionsManagerInterface
         ) {
-            foreach ($this->options['read'] as $name => $value) {
+            foreach ($options['read'] as $name => $value) {
                 $reader->setOption($name, $value);
             }
         }
@@ -103,12 +85,38 @@ class Rows implements Iterator
         $sheets = $reader->getSheetIterator();
         $sheets->rewind();
         // 允许指定sheet
-        $skip = $this->options['sheet_index'] ?? 0;
+        $skip = $options['sheet_index'] ?? 0;
         while ($skip-- > 0) {
             $sheets->next();
         }
 
-        return $sheets->current();
+        return new static($sheets->current(), $task->getFields($input), array_merge($options, [
+            'mode' => $task->getFieldsCheckMode($input),
+        ]));
+    }
+
+    /**
+     * @param SheetInterface $sheet
+     * @param array $fields
+     * @param int $mode
+     * @param array $options
+     */
+    public function __construct(
+        SheetInterface $sheet,
+        array $fields,
+        protected array $options = [],
+    ) {
+        if (isset($this->options['skip'])) {
+            $this->skipRow = $this->options['skip'];
+        }
+
+        if (isset($this->options['mode'])) {
+            $this->mode = $this->options['mode'];
+        }
+
+        $this->sheet  = $sheet;
+        $this->rows   = $sheet->getRowIterator();
+        $this->fields = $this->formatFields($this->rows, $fields);
     }
 
     /**
@@ -117,7 +125,7 @@ class Rows implements Iterator
     public function rewind(): void
     {
         $this->rows->rewind();
-        for ($i = 0; $i < $this->skipLine; $i++) {
+        for ($i = 0; $i < $this->skipRow; $i++) {
             $this->rows->next();
         }
 
@@ -195,7 +203,7 @@ class Rows implements Iterator
         $columns = array_flip($fields);
 
         $rows->rewind();
-        for ($i = 0; $i < $this->skipLine; $i++) {
+        for ($i = 0; $i < $this->skipRow; $i++) {
             $rows->next();
         }
 

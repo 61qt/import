@@ -1,7 +1,7 @@
 <?php
 
 use QT\Import\Task;
-use QT\Import\Handler;
+use QT\Import\Rows;
 use QT\Import\Dictionary;
 use QT\Import\Contracts\Template;
 use Illuminate\Validation\Factory;
@@ -127,5 +127,4 @@ $template->fillSimpleData([
 
 $template->save($path);
 
-$handler = new Handler();
-$handler->import($task, $path);
+$task->handle(Rows::createFrom($path, $task));
