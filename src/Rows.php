@@ -46,9 +46,9 @@ class Rows implements Iterator
     /**
      * 默认跳过的行数
      *
-     * @var integer
+     * @var int
      */
-    protected $skipRow = 0;
+    protected $startRow = 0;
 
     /**
      * 字段错误提示语
@@ -58,7 +58,7 @@ class Rows implements Iterator
     protected $fieldErrorMsg = '导入模板与系统提供的模板不一致，请重新导入';
 
     /**
-     * Undocumented function
+     * 构建excel rows读取器
      *
      * @param string $filename
      * @param Task $task
@@ -106,8 +106,8 @@ class Rows implements Iterator
         array $fields,
         protected array $options = [],
     ) {
-        if (isset($this->options['skip'])) {
-            $this->skipRow = $this->options['skip'];
+        if (isset($this->options['start_row'])) {
+            $this->startRow = $this->options['start_row'];
         }
 
         if (isset($this->options['mode'])) {
@@ -125,7 +125,7 @@ class Rows implements Iterator
     public function rewind(): void
     {
         $this->rows->rewind();
-        for ($i = 0; $i < $this->skipRow; $i++) {
+        for ($i = 0; $i < $this->startRow; $i++) {
             $this->rows->next();
         }
 
@@ -197,13 +197,13 @@ class Rows implements Iterator
      * @return array
      * @throws Error
      */
-    private function formatFields(IteratorInterface $rows, array $fields): array
+    protected function formatFields(IteratorInterface $rows, array $fields): array
     {
         $results = [];
         $columns = array_flip($fields);
 
         $rows->rewind();
-        for ($i = 0; $i < $this->skipRow; $i++) {
+        for ($i = 0; $i < $this->startRow; $i++) {
             $rows->next();
         }
 

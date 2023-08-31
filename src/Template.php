@@ -102,11 +102,11 @@ class Template implements ContractTemplate
     protected $ruleStyles = [];
 
     /**
-     * 需要跳过的行数,仅在设置了导入模板后生效,跳过模板原内容
+     * 起始行号,仅在设置了导入模板后生效,跳过模板原内容
      *
      * @var integer
      */
-    protected $skipRow = 0;
+    protected $startRow = 0;
 
     /**
      * @param Spreadsheet $spreadsheet
@@ -218,7 +218,7 @@ class Template implements ContractTemplate
         $flag  = CellIterator::TREAT_NULL_VALUE_AS_EMPTY_CELL | CellIterator::TREAT_EMPTY_STRING_AS_EMPTY_CELL;
         foreach ($sheet->getRowIterator() as $line => $row) {
             if (!$row->isEmpty($flag)) {
-                $this->skipRow = $line;
+                $this->startRow = $line;
             }
         }
 
@@ -250,7 +250,7 @@ class Template implements ContractTemplate
 
         $sheet = $this->spreadsheet->getSheet($sheetIndex);
         // 填充数据
-        $this->addStrictStringRows($sheet, $source, $startColumn, $startRow + $this->skipRow);
+        $this->addStrictStringRows($sheet, $source, $startColumn, $startRow + $this->startRow);
     }
 
     /**
@@ -299,7 +299,7 @@ class Template implements ContractTemplate
     protected function generateFirstColumn(Worksheet $sheet)
     {
         $currentColumn = 0;
-        $currentLine   = $this->skipRow + 1;
+        $currentLine   = $this->startRow + 1;
         foreach ($this->columns as $column => $displayName) {
             $coordinate = Coordinate::stringFromColumnIndex(++$currentColumn);
 
