@@ -206,6 +206,7 @@ class Rows implements Iterator
     protected function formatFields(IteratorInterface $rows, array $fields): array
     {
         $results = [];
+        $count   = count($fields);
         $columns = array_flip($fields);
 
         $rows->rewind();
@@ -213,7 +214,12 @@ class Rows implements Iterator
             $rows->next();
         }
 
-        foreach ($rows->current()->getCells() as $value) {
+        foreach ($rows->current()->getCells() as $index => $value) {
+            // 超过最大列数后不再取值
+            if ($index === $count) {
+                break;
+            }
+
             $value = $value->getValue();
             $pos   = strpos($value, '(');
             // 剔除括号内的内容
@@ -225,7 +231,7 @@ class Rows implements Iterator
                 throw new FieldException($this->fieldErrorMsg);
             }
 
-            $results[] = $columns[$value];
+            $results[$index] = $columns[$value];
         }
 
         // 严格模式下字段必须完全匹配
