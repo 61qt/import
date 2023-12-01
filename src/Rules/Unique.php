@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Collection;
  * 检查导入数据再db中是否唯一,如果不唯一抛出错误
  *
  * Class Unique
+ *
  * @package QT\Import\Rules
  *
  * 参数说明:

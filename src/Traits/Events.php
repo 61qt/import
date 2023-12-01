@@ -24,8 +24,8 @@ trait Events
     /**
      * 导入完成时触发
      *
-     * @param  array $successful 导入成功行
-     * @param  array $failed     导入失败行
+     * @param array $successful 导入成功行
+     * @param array $fail 导入失败行
      * @return void
      */
     public function afterImport(array $successful, array $fail)
@@ -36,7 +36,7 @@ trait Events
     /**
      * 导入时触发
      *
-     * @param  int $count
+     * @param int $count
      * @return void
      */
     public function onReport(int $count)
@@ -47,7 +47,7 @@ trait Events
     /**
      * 导入执行失败时触发
      *
-     * @param  Throwable $exception
+     * @param Throwable $exception
      * @return void
      */
     public function onFailed(Throwable $exception)

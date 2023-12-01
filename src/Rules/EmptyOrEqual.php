@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Collection;
  * 检查导入数据与数据库中已存在的数据是否一致或者为空
  *
  * Class EmptyOrEqual
+ *
  * @package QT\Import\Rules
  *
  * 参数说明:

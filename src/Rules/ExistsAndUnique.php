@@ -11,6 +11,7 @@ use Illuminate\Database\Query\Builder as BaseBuilder;
  * 如果存在并且有多条,再根据另外的字段进行第二次匹配
  *
  * Class ExistsAndUnique
+ *
  * @package App\Tasks\Import\Rules
  *
  * 参数说明:
@@ -49,28 +50,28 @@ class ExistsAndUnique extends ValidateModels
 {
     /**
      * 允许为空的字段
-     * 
+     *
      * @var array
      */
     protected $nullable = [];
 
     /**
      * 导入时的列名
-     * 
+     *
      * @var array
      */
     protected $columns = [];
 
     /**
      * 不存在时的错误
-     * 
+     *
      * @var string
      */
     protected $notFoundMessage = '不存在的数据';
 
     /**
      * 重复时的错误
-     * 
+     *
      * @var string
      */
     protected $notUniqueMessage = '相同的数据';

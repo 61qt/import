@@ -7,7 +7,7 @@ use QT\Import\Contracts\Dictionary;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Contracts\Validation\Factory;
 use QT\Import\Exceptions\ValidationException;
-use Box\Spout\Writer\Common\Helper\CellHelper;
+use OpenSpout\Writer\Common\Helper\CellHelper;
 
 /**
  * 给每一行进行校验并格式化为期望的数据

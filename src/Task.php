@@ -6,8 +6,8 @@ use DateTime;
 use Throwable;
 use QT\Import\Traits\Events;
 use QT\Import\Traits\CheckMaxRow;
-use QT\Import\Traits\WithTemplate;
 use QT\Import\Exceptions\RowError;
+use QT\Import\Traits\WithTemplate;
 use Illuminate\Database\Connection;
 use QT\Import\Traits\RowsValidator;
 use QT\Import\Traits\CheckAndFormat;
@@ -82,6 +82,7 @@ abstract class Task
     /**
      * 需要格式化日期的字段
      * 如 'birthday' => 'Ymd'
+     *
      * @var array
      */
     protected $fieldDateFormats = [];
@@ -118,7 +119,7 @@ abstract class Task
 
     /**
      * 字段校验模式(默认使用宽松模式)
-     * 
+     *
      * @var int
      */
     protected $fieldsCheckMode = Rows::TOLERANT_MODE;
@@ -130,17 +131,6 @@ abstract class Task
      * @return array
      */
     abstract public function getFields(array $input = []): array;
-
-    /**
-     * 获取字段校验模式
-     * 
-     * @param array $input
-     * @return int
-     */
-    public function getFieldsCheckMode(array $input = []): int
-    {
-        return $this->fieldsCheckMode;
-    }
 
     /**
      * 开始处理异步导入任务
@@ -168,6 +158,8 @@ abstract class Task
             $this->bootFieldDateFormats();
             // 处理行内容
             $this->processRows($rows);
+            // 数据校验完成后,清空冗余数据,释放内存
+            $this->originalRows = [];
             // 插入到db
             if (empty($connection) || !$this->useTransaction) {
                 $this->insertDB();
@@ -179,6 +171,17 @@ abstract class Task
         } catch (Throwable $e) {
             $this->onFailed($e);
         }
+    }
+
+    /**
+     * 获取字段校验模式
+     *
+     * @param array $input
+     * @return int
+     */
+    public function getFieldsCheckMode(array $input = []): int
+    {
+        return $this->fieldsCheckMode;
     }
 
     /**
@@ -241,6 +244,8 @@ abstract class Task
                 if (empty($data)) {
                     continue;
                 }
+                // 进行唯一性检查,保证唯一索引字段在excel内不会有重复
+                $this->checkTableDuplicated($data, $line);
 
                 $this->rows[$line] = $data;
                 // 冗余原始行数据
@@ -271,8 +276,8 @@ abstract class Task
      *
      * @param array $data
      * @param int $line
-     * @return array
      * @throws ValidationException
+     * @return array
      */
     protected function checkAndFormatRow(array $data, int $line): array
     {
@@ -294,9 +299,6 @@ abstract class Task
         $this->throwNotEmpty($errors, $line);
 
         [$result, $line] = $this->formatRow(...$this->checkRow($data, $line));
-
-        // 进行唯一性检查,保证唯一索引字段在excel内不会有重复
-        $this->checkTableDuplicated($result, $line);
 
         return $result;
     }
@@ -320,9 +322,24 @@ abstract class Task
 
             unset($this->rows[$line]);
         }
+    }
 
-        // 数据校验完成后,清空冗余数据,释放内存
-        $this->originalRows = [];
+    /**
+     * 在checkAndFormatRows方法里面处理错误信息
+     *
+     * @param integer $line
+     * @param string $error
+     * @return void
+     */
+    protected function removeErrorRow(int $line, string $error)
+    {
+        $this->errors[$line] = new RowError(
+            $this->originalRows[$line],
+            $line,
+            new ValidationException($error)
+        );
+
+        unset($this->rows[$line]);
     }
 
     /**

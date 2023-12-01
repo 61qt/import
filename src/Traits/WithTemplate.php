@@ -32,6 +32,13 @@ trait WithTemplate
      * @var array
      */
     protected $optional = [];
+    /**
+     * 设置需要格式的列
+     * 如：['column' => NumberFormat::FORMAT_GENERAL]
+     *
+     * @var array
+     */
+    protected $formatColumns = [];
 
     /**
      * 校验规则提示语
@@ -39,21 +46,21 @@ trait WithTemplate
      * @var array
      */
     protected $ruleComments = [
-        'Required'   => '必填',
-        'Integer'    => '数字',
-        'DateFormat' => '格式为 :format',
-        'Min'        => [
+        'Required'      => '必填',
+        'Integer'       => '数字',
+        'DateFormat'    => '格式为 :format',
+        'Min'           => [
             'Integer' => '最小为 :min',
             'String'  => '最短为 :min',
         ],
-        'Max' => [
+        'Max'           => [
             'Integer' => '最大为 :max',
             'String'  => '最长为 :max',
         ],
-        "Between" => [
-            "Integer" => "数值范围 :min - :max 之间。",
-            "Numeric" => "数值范围 :min - :max 之间。",
-            "String"  => "必须介于 :min - :max 个字符之间。",
+        'Between'       => [
+            'Integer' => '数值范围 :min - :max 之间。',
+            'Numeric' => '数值范围 :min - :max 之间。',
+            'String'  => '必须介于 :min - :max 个字符之间。',
         ],
         'DigitsBetween' => ' :min 到 :max 位数字',
         'Digits'        => ' :digits 位数字',
@@ -66,11 +73,11 @@ trait WithTemplate
      */
     protected $ruleStyles = [
         'Required' => [
-            'fill' => [
+            'fill'    => [
                 'fillType'   => Fill::FILL_SOLID,
                 'startColor' => ['argb' => Color::COLOR_RED],
             ],
-            'font' => [
+            'font'    => [
                 'color' => ['argb' => Color::COLOR_WHITE],
             ],
             'borders' => [
@@ -95,6 +102,7 @@ trait WithTemplate
 
         $template->setImportSheet(0);
         $template->setFirstColumn($fields, $this->rules, $this->remarks);
+        $template->setColumnFormat($this->formatColumns);
         $template->setDictionaries($this->getDictionaries());
         $template->setOptionalColumns($this->getOptionalColumns($input));
 
@@ -133,6 +141,7 @@ trait WithTemplate
             if (method_exists($this, $replacer = "replace{$rule}")) {
                 return $this->{$replacer}($message, '', $rule, $params);
             }
+
             return str_replace(":{$rule}", $params[0] ?? '', $message);
         };
     }
@@ -141,7 +150,7 @@ trait WithTemplate
      * 获取可选列
      *
      * @param array $input
-     * @return array<string, \QT\Import\Contracts\Dictionary>
+     * @return array
      */
     public function getOptionalColumns(array $input = []): array
     {

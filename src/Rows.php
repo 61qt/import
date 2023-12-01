@@ -3,14 +3,12 @@
 namespace QT\Import;
 
 use Iterator;
-use SplFileInfo;
-use Box\Spout\Common\Entity\Row;
-use Box\Spout\Reader\SheetInterface;
-use Box\Spout\Reader\IteratorInterface;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Reader\SheetInterface;
 use QT\Import\Exceptions\FieldException;
-use Box\Spout\Reader\Common\Creator\ReaderFactory;
-use Box\Spout\Common\Manager\OptionsManagerInterface;
-use Box\Spout\Common\Type;
+use OpenSpout\Reader\RowIteratorInterface;
+use OpenSpout\Reader\XLSX\Reader as XLSXReader;
+use OpenSpout\Reader\XLSX\Options as XLSXOptions;
 
 /**
  * Rows
@@ -28,7 +26,7 @@ class Rows implements Iterator
     protected $sheet;
 
     /**
-     * @var IteratorInterface
+     * @var RowIteratorInterface
      */
     protected $rows;
 
@@ -59,52 +57,8 @@ class Rows implements Iterator
     protected $fieldErrorMsg = '导入模板与系统提供的模板不一致，请重新导入';
 
     /**
-     * 构建excel rows读取器
-     *
-     * @param string $filename
-     * @param Task $task
-     * @param array $input
-     * @param array $options
-     * @return self
-     */
-    public static function createFrom(string $filename, Task $task, array $input = [], array $options = [])
-    {
-        $type = Type::XLSX;
-        $file = new SplFileInfo($filename);
-
-        if ($file->getExtension() !== "") {
-            $type = $file->getExtension();
-        }
-
-        $reader = ReaderFactory::createFromType($type);
-
-        if (
-            isset($options['read']) &&
-            $reader instanceof OptionsManagerInterface
-        ) {
-            foreach ($options['read'] as $name => $value) {
-                $reader->setOption($name, $value);
-            }
-        }
-
-        $reader->open($filename);
-        $sheets = $reader->getSheetIterator();
-        $sheets->rewind();
-        // 允许指定sheet
-        $skip = $options['sheet_index'] ?? 0;
-        while ($skip-- > 0) {
-            $sheets->next();
-        }
-
-        return new static($sheets->current(), $task->getFields($input), array_merge($options, [
-            'mode' => $task->getFieldsCheckMode($input),
-        ]));
-    }
-
-    /**
      * @param SheetInterface $sheet
      * @param array $fields
-     * @param int $mode
      * @param array $options
      */
     public function __construct(
@@ -126,11 +80,46 @@ class Rows implements Iterator
     }
 
     /**
+     * 构建excel rows读取器
+     *
+     * @param string $filename
+     * @param Task $task
+     * @param array $input
+     * @param array $options
+     * @return self
+     */
+    public static function createFrom(string $filename, Task $task, array $input = [], array $options = [])
+    {
+        $readerOptions = new XLSXOptions();
+
+        if (isset($options['read'])) {
+            foreach ($options['read'] as $name => $value) {
+                $readerOptions->{$name} = $value;
+            }
+        }
+        $reader = new XLSXReader($readerOptions);
+        $reader->open($filename);
+        $sheets = $reader->getSheetIterator();
+        $sheets->rewind();
+        // 允许指定sheet
+        $skip = $options['sheet_index'] ?? 0;
+
+        while ($skip-- > 0) {
+            $sheets->next();
+        }
+
+        return new static($sheets->current(), $task->getFields($input), array_merge($options, [
+            'mode' => $task->getFieldsCheckMode($input),
+        ]));
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function rewind(): void
     {
         $this->rows->rewind();
+
         for ($i = 0; $i < $this->startRow; $i++) {
             $this->rows->next();
         }
@@ -160,9 +149,9 @@ class Rows implements Iterator
     /**
      * 获取当前行的key
      *
-     * @return integer
+     * @return mixed
      */
-    public function key(): int
+    public function key(): mixed
     {
         return $this->rows->key();
     }
@@ -198,18 +187,18 @@ class Rows implements Iterator
     /**
      * 根据首行数据匹配列名
      *
-     * @param IteratorInterface $rows
+     * @param RowIteratorInterface $rows
      * @param array $fields
-     * @return array
      * @throws Error
+     * @return array
      */
-    protected function formatFields(IteratorInterface $rows, array $fields): array
+    protected function formatFields(RowIteratorInterface $rows, array $fields): array
     {
         $results = [];
         $count   = count($fields);
         $columns = array_flip($fields);
-
         $rows->rewind();
+
         for ($i = 0; $i < $this->startRow; $i++) {
             $rows->next();
         }

@@ -6,7 +6,7 @@ use Illuminate\Database\Query\Builder;
 
 /**
  * 导入模板
- * 
+ *
  * @package QT\Import\Contracts
  */
 interface Template

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Collection;
  * 检查导入数据再数据库中是否存在,如果不存在就抛出错误
  *
  * Class Exists
+ *
  * @package QT\Import\Rules
  *
  * 参数说明:

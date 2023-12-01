@@ -4,7 +4,7 @@ namespace QT\Import\Contracts;
 
 /**
  * 批量校验
- * 
+ *
  * @package QT\Import\Contracts
  */
 interface Validatable

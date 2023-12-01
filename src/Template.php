@@ -11,6 +11,7 @@ use QT\Import\Exceptions\TemplateException;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use Illuminate\Validation\ValidationRuleParser;
 use PhpOffice\PhpSpreadsheet\RichText\RichText;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\CellIterator;
@@ -80,6 +81,12 @@ class Template implements ContractTemplate
      */
     protected $optionalColumns = [];
 
+    /**
+     * 设置需要格式的列
+     *
+     * @var array
+     */
+    protected $formatColumns = [];
     /**
      * 导入示例内容
      *
@@ -194,6 +201,17 @@ class Template implements ContractTemplate
     }
 
     /**
+     * 设置需要格式的列
+     *
+     * @param array $formatColumns
+     * @return void
+     */
+    public function setColumnFormat(array $formatColumns)
+    {
+        $this->formatColumns = $formatColumns;
+    }
+
+    /**
      * 在excel第三个sheet中生成示例(自动生成和模板一样的首行)
      *
      * @param array $example
@@ -224,6 +242,8 @@ class Template implements ContractTemplate
 
         // 复制模板文件到导入模板上
         $this->spreadsheet->addExternalSheet($sheet, $this->importSheetIndex);
+        // 去掉复制后多余的sheet
+        $this->spreadsheet->removeSheetByIndex($this->importSheetIndex + 1);
     }
 
     /**
@@ -313,6 +333,10 @@ class Template implements ContractTemplate
             }
 
             $sheet->getCell("{$coordinate}{$currentLine}")->setValue($displayName);
+
+            $format = $this->formatColumns[$column] ?? NumberFormat::FORMAT_TEXT;
+            $sheet->getStyle($coordinate)->getNumberFormat()->setFormatCode($format);
+
             // 填写字段备注信息
             if (isset($this->remarks[$column])) {
                 $text = new RichText();
@@ -408,7 +432,7 @@ class Template implements ContractTemplate
                 ->setShowErrorMessage(true)
                 ->setShowDropDown(true)
                 ->setErrorTitle('输入错误')
-                ->setError("必须在可选的范围内")
+                ->setError('必须在可选的范围内')
                 ->setFormula1($this->getFormula(
                     $this->dictSheetTitle,
                     Coordinate::stringFromColumnIndex($dictIndex),
@@ -451,6 +475,7 @@ class Template implements ContractTemplate
         }
 
         $rows = [$first];
+
         for ($line = 0; $line < $maxLine; $line++) {
             $row = [];
             foreach ($columns as $column => $dict) {

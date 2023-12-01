@@ -10,7 +10,7 @@ use Illuminate\Database\Query\Builder as BaseBuilder;
 
 /**
  * ValidateModels
- * 
+ *
  * @package QT\Import\Rules
  */
 abstract class ValidateModels implements Validatable
@@ -178,7 +178,7 @@ abstract class ValidateModels implements Validatable
      * TODO 支持分片查询,防止预处理占位符溢出
      * 生成where条件,并返回where条件对应的行号
      *
-     * @param  Builder|BaseBuilder $query
+     * @param Builder|BaseBuilder $query
      * @param array $rows
      * @param array $fields
      * @return array

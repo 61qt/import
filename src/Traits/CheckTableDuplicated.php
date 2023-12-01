@@ -17,6 +17,7 @@ trait CheckTableDuplicated
      * 已存在的字段值
      *
      * field => [values...]
+     *
      * @var array
      */
     private $existingFieldValues = [];
@@ -60,8 +61,8 @@ trait CheckTableDuplicated
      *
      * @param array $data
      * @param integer $line
-     * @return void
      * @throws ValidationException
+     * @return void
      */
     public function checkTableDuplicated(array $data, int $line)
     {
@@ -89,7 +90,7 @@ trait CheckTableDuplicated
             $errField     = join(', ', array_map(fn ($field) => $attributes[$field] ?? $field, $fields));
 
             throw new ValidationException(sprintf(
-                "%s 错误: 原表第%s行 与 第%s行 重复,请确保数据表内的数据为唯一的",
+                '%s 错误: 原表第%s行 与 第%s行 重复,请确保数据表内的数据为唯一的',
                 $errField,
                 $line,
                 $conflictLine
@@ -115,17 +116,6 @@ trait CheckTableDuplicated
             $values[] = $data[$field];
         }
 
-        return $this->formatTableDuplicatedValue($values);
-    }
-
-    /**
-     * 格式化需要进行全表唯一检查的值
-     *
-     * @param array $values
-     * @return array
-     */
-    protected function formatTableDuplicatedValue(array $values): array
-    {
         return $values;
     }
 }

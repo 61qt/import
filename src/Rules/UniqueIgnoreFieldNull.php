@@ -9,6 +9,7 @@ use Illuminate\Database\Query\Builder as BaseBuilder;
  * 检查导入数据再db中是否唯一,如果不唯一抛出错误
  *
  * Class UniqueIgnoreFieldNull
+ *
  * @package QT\Import\Rules
  *
  * 参数说明:

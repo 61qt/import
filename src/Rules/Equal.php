@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
  * 检查导入数据与数据库中已存在的数据是否一致
  *
  * Class Equal
+ *
  * @package QT\Import\Rules
  *
  * 参数说明:
@@ -107,8 +108,8 @@ class Equal extends ValidateModels
      * 获取关联字段
      *
      * @param Relation $relation
-     * @return string
      * @throws RuntimeException
+     * @return string
      */
     protected function getWithKeyName(Relation $relation): string
     {
