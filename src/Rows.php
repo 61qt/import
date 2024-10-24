@@ -17,16 +17,16 @@ class Rows implements Iterator
      * 
      * @var array
      */
-    protected $heads;
+    protected $columns;
 
     /**
      * @param Iterator $rows
-     * @param callable $matchHeadsFn
+     * @param callable $matchColumnsFn
      */
-    public function __construct(protected Iterator $rows, protected $matchHeadsFn)
+    public function __construct(protected Iterator $rows, protected $matchColumnsFn)
     {
-        if (!is_callable($this->matchHeadsFn)) {
-            throw new RuntimeException('matchHeadsFn must be callable');
+        if (!is_callable($this->matchColumnsFn)) {
+            throw new RuntimeException('matchColumnsFn must be callable');
         }
     }
 
@@ -37,7 +37,7 @@ class Rows implements Iterator
     {
         $this->rows->rewind();
 
-        $this->heads = call_user_func($this->matchHeadsFn, $this->rows);
+        $this->columns = call_user_func($this->matchColumnsFn, $this->rows);
     }
 
     /**
@@ -78,7 +78,7 @@ class Rows implements Iterator
         // 组装row,保证row的内容与导入模板设置的字段匹配
         $row   = [];
         $cells = $this->rows->current();
-        foreach ($this->heads as $index => $head) {
+        foreach ($this->columns as $index => $column) {
             $value = '';
             if (!empty($cells[$index])) {
                 $value = $cells[$index];
@@ -88,7 +88,7 @@ class Rows implements Iterator
                 }
             }
 
-            $row[$head] = $value;
+            $row[$column] = $value;
         }
 
         return $row;
