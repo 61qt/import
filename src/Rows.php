@@ -20,10 +20,10 @@ class Rows implements Iterator
     protected $columns;
 
     /**
-     * @param Iterator $rows
+     * @param Iterator $reader
      * @param callable $matchColumnsFn
      */
-    public function __construct(protected Iterator $rows, protected $matchColumnsFn)
+    public function __construct(protected Iterator $reader, protected $matchColumnsFn)
     {
         if (!is_callable($this->matchColumnsFn)) {
             throw new RuntimeException('matchColumnsFn must be callable');
@@ -35,9 +35,9 @@ class Rows implements Iterator
      */
     public function rewind(): void
     {
-        $this->rows->rewind();
+        $this->reader->rewind();
 
-        $this->columns = call_user_func($this->matchColumnsFn, $this->rows);
+        $this->columns = call_user_func($this->matchColumnsFn, $this->reader);
     }
 
     /**
@@ -45,7 +45,7 @@ class Rows implements Iterator
      */
     public function valid(): bool
     {
-        return $this->rows->valid();
+        return $this->reader->valid();
     }
 
     /**
@@ -55,7 +55,7 @@ class Rows implements Iterator
      */
     public function next(): void
     {
-        $this->rows->next();
+        $this->reader->next();
     }
 
     /**
@@ -65,7 +65,7 @@ class Rows implements Iterator
      */
     public function key(): mixed
     {
-        return $this->rows->key();
+        return $this->reader->key();
     }
 
     /**
@@ -76,12 +76,12 @@ class Rows implements Iterator
     public function current(): array
     {
         // 组装row,保证row的内容与导入模板设置的字段匹配
-        $row   = [];
-        $cells = $this->rows->current();
+        $row  = [];
+        $data = $this->reader->current();
         foreach ($this->columns as $index => $column) {
             $value = '';
-            if (!empty($cells[$index])) {
-                $value = $cells[$index];
+            if (!empty($data[$index])) {
+                $value = $data[$index];
 
                 if (is_scalar($value)) {
                     $value = trim(strval($value));

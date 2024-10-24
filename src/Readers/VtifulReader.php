@@ -46,7 +46,7 @@ class VtifulReader implements Iterator
      * @param string $filename
      * @param array $options
      */
-    public function __construct(protected string $filename, protected array $options)
+    public function __construct(protected string $filename, protected array $options = [])
     {
         $this->reader = new Excel(['path' => '/']);
     }
