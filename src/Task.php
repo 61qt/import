@@ -122,7 +122,7 @@ abstract class Task
      *
      * @var int
      */
-    protected $fieldsCheckMode = Rows::TOLERANT_MODE;
+    protected $matchColumnMode = MatchColumns::TOLERANT_MODE;
 
     /**
      * 获取导入字段
@@ -171,17 +171,6 @@ abstract class Task
         } catch (Throwable $e) {
             $this->onFailed($e);
         }
-    }
-
-    /**
-     * 获取字段校验模式
-     *
-     * @param array $input
-     * @return int
-     */
-    public function getFieldsCheckMode(array $input = []): int
-    {
-        return $this->fieldsCheckMode;
     }
 
     /**
@@ -322,24 +311,6 @@ abstract class Task
 
             unset($this->rows[$line]);
         }
-    }
-
-    /**
-     * 在checkAndFormatRows方法里面处理错误信息
-     *
-     * @param integer $line
-     * @param string $error
-     * @return void
-     */
-    protected function removeErrorRow(int $line, string $error)
-    {
-        $this->errors[$line] = new RowError(
-            $this->originalRows[$line],
-            $line,
-            new ValidationException($error)
-        );
-
-        unset($this->rows[$line]);
     }
 
     /**
