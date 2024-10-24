@@ -58,7 +58,7 @@ class VtifulReader implements Iterator
     {
         $sheets = $this->reader->openFile($this->filename)->sheetList();
         // 允许指定sheet
-        $this->reader->openSheet($sheets[$options['sheet_index'] ?? 0]);
+        $this->reader->openSheet($sheets[$this->options['sheet_index'] ?? 0]);
 
         $this->currentLine = 0;
         $this->currentData = null;
