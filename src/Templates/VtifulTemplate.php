@@ -1,29 +1,24 @@
 <?php
 
-namespace QT\Import;
+namespace QT\Import\Templates;
 
+use Vtiful\Kernel\Excel;
+use Vtiful\Kernel\Format;
+use Vtiful\Kernel\Validation;
 use QT\Import\Contracts\Dictionary;
 use Illuminate\Database\Query\Builder;
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use QT\Import\Exceptions\TemplateException;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use Illuminate\Validation\ValidationRuleParser;
-use PhpOffice\PhpSpreadsheet\RichText\RichText;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
-use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\CellIterator;
 use QT\Import\Contracts\Template as ContractTemplate;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
 /**
  * Excel导入模板
  *
- * @package QT\Import
+ * @package QT\Import\Templates
  */
-class Template implements ContractTemplate
+class VtifulTemplate implements ContractTemplate
 {
     /**
      * 导入sheet index
@@ -87,6 +82,7 @@ class Template implements ContractTemplate
      * @var array
      */
     protected $formatColumns = [];
+
     /**
      * 导入示例内容
      *
@@ -116,9 +112,30 @@ class Template implements ContractTemplate
     protected $startRow = 0;
 
     /**
-     * @param Spreadsheet $spreadsheet
+     * 模板文件
+     *
+     * @var string|null
      */
-    public function __construct(protected Spreadsheet $spreadsheet)
+    protected $templateFile = null;
+
+    /**
+     * sheet list
+     *
+     * @var array
+     */
+    protected $sheets = [];
+
+    /**
+     * 数据源
+     *
+     * @var callable|null
+     */
+    protected $fillDataFn = null;
+
+    /**
+     * @param Excel $excel
+     */
+    public function __construct(protected Excel $excel)
     {
     }
 
@@ -160,6 +177,8 @@ class Template implements ContractTemplate
     {
         $this->importSheetIndex = $index;
         $this->importSheetTitle = $title ?: '导入模板';
+        // 手动维护sheet index与sheet name的关联
+        $this->sheets = [$this->importSheetIndex => $this->importSheetTitle];
     }
 
     /**
@@ -229,34 +248,22 @@ class Template implements ContractTemplate
      */
     public function setTemplateFile(string $filename, int $sheetIndex = 0)
     {
-        $spreadsheet = IOFactory::createReaderForFile($filename)->load($filename);
-
-        // 计算要跳过的行数
-        $sheet = $spreadsheet->getSheet($sheetIndex);
-        $flag  = CellIterator::TREAT_NULL_VALUE_AS_EMPTY_CELL | CellIterator::TREAT_EMPTY_STRING_AS_EMPTY_CELL;
-        foreach ($sheet->getRowIterator() as $line => $row) {
-            if (!$row->isEmpty($flag)) {
-                $this->startRow = $line;
-            }
-        }
-
-        // 复制模板文件到导入模板上
-        $this->spreadsheet->addExternalSheet($sheet, $this->importSheetIndex);
-        // 去掉复制后多余的sheet
-        $this->spreadsheet->removeSheetByIndex($this->importSheetIndex + 1);
+        // TODO
+        // 可以尝试通过合并xml实现,记录cell值在原集合的位置
+        // 将数据合并至sharedStrings作为新集合,再把旧集合的位置替换为新集合的位置
     }
 
     /**
      * 给导入模板填入基础数据
      *
      * @param Builder|iterable $source
-     * @param int $sheetIndex
+     * @param ?int $sheetIndex
      * @param int $startColumn
      * @param int $startRow
      */
     public function fillSimpleData(
         $source,
-        int $sheetIndex = 0,
+        ?int $sheetIndex = null,
         int $startColumn = 0,
         int $startRow = 2
     ) {
@@ -268,9 +275,14 @@ class Template implements ContractTemplate
             throw new TemplateException('无效的数据源');
         }
 
-        $sheet = $this->spreadsheet->getSheet($sheetIndex);
-        // 填充数据
-        $this->addStrictStringRows($sheet, $source, $startColumn, $startRow + $this->startRow);
+        $this->fillDataFn = function () use ($source, $sheetIndex, $startRow) {
+            if ($sheetIndex === null) {
+                $sheetIndex = $this->importSheetIndex;
+            }
+
+            // 填充数据
+            $this->writeRows($sheetIndex, $source, ($startRow + $this->startRow) - 1);
+        };
     }
 
     /**
@@ -280,15 +292,17 @@ class Template implements ContractTemplate
      */
     public function save(string $filename)
     {
+        $this->excel->constMemory($filename, $this->importSheetTitle, false);
+
         $this->generateColumns()
-            ->generateOptionalColumns()
-            ->generateExampleSheet();
+            ->generateExampleSheet()
+            ->generateOptionalColumns();
 
-        $this->spreadsheet->setActiveSheetIndex($this->importSheetIndex);
+        if ($this->fillDataFn !== null) {
+            call_user_func($this->fillDataFn);
+        }
 
-        $writer = IOFactory::createWriter($this->spreadsheet, 'Xlsx');
-
-        $writer->save($filename);
+        $this->excel->output();
     }
 
     /**
@@ -298,15 +312,8 @@ class Template implements ContractTemplate
      */
     protected function generateColumns()
     {
-        if ($this->importSheetIndex === 0) {
-            $sheet = $this->spreadsheet->getSheet($this->importSheetIndex);
-        } else {
-            $sheet = $this->spreadsheet->createSheet($this->importSheetIndex);
-        }
-
-        $sheet->setTitle($this->importSheetTitle);
         // 生成首行信息
-        $this->generateFirstColumn($sheet);
+        $this->generateFirstColumn($this->importSheetTitle);
 
         return $this;
     }
@@ -314,15 +321,15 @@ class Template implements ContractTemplate
     /**
      * 生成首行信息
      *
-     * @param Worksheet $sheet
+     * @param string $sheetName
      */
-    protected function generateFirstColumn(Worksheet $sheet)
+    protected function generateFirstColumn(string $sheetName)
     {
-        $currentColumn = 0;
-        $currentLine   = $this->startRow + 1;
-        foreach ($this->columns as $column => $displayName) {
-            $coordinate = Coordinate::stringFromColumnIndex(++$currentColumn);
+        $this->excel->checkoutSheet($sheetName);
 
+        $currentColumn = 0;
+        $currentLine   = $this->startRow;
+        foreach ($this->columns as $column => $displayName) {
             $rules = [];
             if (!empty($this->rules[$column])) {
                 [$suffix, $rules] = $this->getRuleComment($this->rules[$column]);
@@ -332,24 +339,32 @@ class Template implements ContractTemplate
                 }
             }
 
-            $sheet->getCell("{$coordinate}{$currentLine}")->setValue($displayName);
+            $handle = null;
+            // 获取单元格样式
+            foreach ($this->ruleStyles as $rule => $options) {
+                if (!array_key_exists($rule, $rules)) {
+                    continue;
+                }
 
+                $style = new Format($this->excel->getHandle());
+                foreach ($options as $method => $option) {
+                    $style->{$method}(...$option);
+                }
+
+                $handle = $style->toResource();
+            }
+
+            // 获取内容格式
             $format = $this->formatColumns[$column] ?? NumberFormat::FORMAT_TEXT;
-            $sheet->getStyle($coordinate)->getNumberFormat()->setFormatCode($format);
+
+            $this->excel->insertText($currentLine, $currentColumn, $displayName, $format, $handle);
 
             // 填写字段备注信息
             if (isset($this->remarks[$column])) {
-                $text = new RichText();
-                $text->createText($this->remarks[$column]);
-
-                $sheet->getComment("{$coordinate}{$currentLine}")->setText($text);
+                $this->excel->insertComment($currentLine, $currentColumn, $this->remarks[$column]);
             }
 
-            foreach ($this->ruleStyles as $rule => $style) {
-                if (array_key_exists($rule, $rules)) {
-                    $sheet->getStyle("{$coordinate}{$currentLine}")->applyFromArray($style);
-                }
-            }
+            $currentColumn++;
         }
     }
 
@@ -399,11 +414,12 @@ class Template implements ContractTemplate
             throw new TemplateException('只有在导入表头加载完成后才允许生成字典');
         }
 
+        $this->excel->checkoutSheet($this->importSheetTitle);
+
         $index     = 0;
         $maxLine   = 0;
         $dictIndex = 0;
         $columns   = [];
-        $sheet     = $this->spreadsheet->getSheet($this->importSheetIndex);
         foreach ($this->columns as $column => $_) {
             $index++;
 
@@ -424,24 +440,17 @@ class Template implements ContractTemplate
                 continue;
             }
 
-            $validation = (new DataValidation())
-                ->setType(DataValidation::TYPE_LIST)
-                ->setErrorStyle(DataValidation::STYLE_INFORMATION)
-                ->setAllowBlank(false)
-                ->setShowInputMessage(true)
-                ->setShowErrorMessage(true)
-                ->setShowDropDown(true)
-                ->setErrorTitle('输入错误')
-                ->setError('必须在可选的范围内')
-                ->setFormula1($this->getFormula(
+            $validation = new Validation();
+            $validation->validationType(Validation::TYPE_LIST_FORMULA)
+                ->valueFormula($this->getFormula(
                     $this->dictSheetTitle,
-                    Coordinate::stringFromColumnIndex($dictIndex),
-                    count($columns[$column]) + 1
+                    $this->stringFromColumnIndex($dictIndex),
+                    count($columns[$column]) + 1,
                 ));
 
-            $column = Coordinate::stringFromColumnIndex($index);
+            $column = $this->stringFromColumnIndex($index);
             // 给1~200000行设置下拉选项
-            $sheet->setDataValidation("{$column}2:{$column}200000", $validation);
+            $this->excel->validation("{$column}2:{$column}200000", $validation->toResource());
         }
 
         $this->generateDictSheet($columns, $maxLine, $this->dictSheetTitle);
@@ -454,19 +463,14 @@ class Template implements ContractTemplate
      *
      * @param array $columns
      * @param integer $maxLine
-     * @param string|null $title
+     * @param string $title
      * @return void
      */
-    protected function generateDictSheet(array $columns, int $maxLine, string $title = null)
+    protected function generateDictSheet(array $columns, int $maxLine, string $title)
     {
         if (empty($columns)) {
             return;
         }
-
-        // 获取导入用的sheet后一个sheet
-        $sheet = $this->spreadsheet->createSheet(
-            $this->spreadsheet->getActiveSheetIndex() + 1
-        );
 
         // 生成首行信息
         $first = [];
@@ -489,9 +493,7 @@ class Template implements ContractTemplate
             $rows[] = $row;
         }
 
-        $sheet->setTitle($title);
-
-        $this->addStrictStringRows($sheet, $rows);
+        $this->writeRows($this->addSheet($title), $rows);
     }
 
     /**
@@ -509,16 +511,12 @@ class Template implements ContractTemplate
             return $this;
         }
 
-        // 获取导入用的sheet后一个sheet
-        $sheet = $this->spreadsheet->createSheet(
-            $this->spreadsheet->getActiveSheetIndex() + 1
-        );
-
-        $sheet->setTitle('导入示例');
+        $title = '导入示例';
+        $index = $this->addSheet($title);
         // 生成首行信息
-        $this->generateFirstColumn($sheet);
+        $this->generateFirstColumn($title);
         // 添加演示模板数据
-        $this->addStrictStringRows($sheet, $this->example, 0, 2);
+        $this->writeRows($index, $this->example, 1);
 
         return $this;
     }
@@ -541,24 +539,57 @@ class Template implements ContractTemplate
     }
 
     /**
+     * 对数字做26进制转换
+     *
+     * @param integer $index
+     * @return string
+     */
+    protected function stringFromColumnIndex(int $index): string
+    {
+        // phpoffice从1开始计算索引, VtifulExcel从0开始计算索引
+        return Excel::stringFromColumnIndex($index - 1);
+    }
+
+    /**
+     * 获取sheet位置
+     *
+     * @param string $sheetName
+     * @return int
+     */
+    protected function addSheet(string $sheetName)
+    {
+        foreach ($this->sheets as $i => $name) {
+            if ($name === $sheetName) {
+                return $i;
+            }
+        }
+
+        $this->sheets[] = $sheetName;
+
+        $this->excel->addSheet($sheetName);
+
+        return count($this->sheets) - 1;
+    }
+
+    /**
      * 填入基础数据
      *
-     * @param Worksheet $sheet
+     * @param int $sheetIndex
      * @param iterable $source
      * @param int $startColumn
      * @param int $startRow
      */
-    protected function addStrictStringRows(Worksheet $sheet, iterable $source, int $startColumn = 0, int $startRow = 1)
+    protected function writeRows(int $sheetIndex, iterable $source, int $startRow = 0)
     {
-        foreach ($source as $row) {
-            $currentColumn = $startColumn;
-            foreach ($row as $value) {
-                $coordinate = Coordinate::stringFromColumnIndex(++$currentColumn);
+        if (empty($this->sheets[$sheetIndex])) {
+            throw new TemplateException("Sheet Index {{$sheetIndex}}不存在");
+        }
 
-                $sheet->getCell("{$coordinate}{$startRow}")
-                    ->setValueExplicit($value, DataType::TYPE_STRING);
-            }
-            ++$startRow;
+        $this->excel->checkoutSheet($this->sheets[$sheetIndex]);
+        $this->excel->setCurrentLine($startRow);
+
+        foreach ($source as $row) {
+            $this->excel->data([$row]);
         }
     }
 }

@@ -2,9 +2,14 @@
 
 namespace QT\Import\Traits;
 
+use Vtiful\Kernel\Excel;
+use QT\Import\Contracts\Template;
+use QT\Import\Templates\VtifulTemplate;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\Border;
+use QT\Import\Templates\PhpOfficeTemplate;
 use Illuminate\Validation\Concerns\ReplacesAttributes;
 
 /**
@@ -15,6 +20,13 @@ use Illuminate\Validation\Concerns\ReplacesAttributes;
 trait WithTemplate
 {
     use ReplacesAttributes;
+
+    /**
+     * 模板生成方式
+     *
+     * @var string
+     */
+    protected $templateDriver = 'vtiful';
 
     /**
      * 字段备注信息
@@ -30,6 +42,13 @@ trait WithTemplate
      * @var array
      */
     protected $formatColumns = [];
+
+    /**
+     * 校验规则样式
+     *
+     * @var array
+     */
+    protected $ruleStyles = [];
 
     /**
      * 校验规则提示语
@@ -58,27 +77,49 @@ trait WithTemplate
     ];
 
     /**
-     * 校验规则样式
+     * 获取导出模板
      *
-     * @var array
+     * @return Template|VtifulTemplate|PhpOfficeTemplate
      */
-    protected $ruleStyles = [
-        'Required' => [
-            'fill'    => [
-                'fillType'   => Fill::FILL_SOLID,
-                'startColor' => ['argb' => Color::COLOR_RED],
-            ],
-            'font'    => [
-                'color' => ['argb' => Color::COLOR_WHITE],
-            ],
-            'borders' => [
-                'outline' => [
-                    'borderStyle' => Border::BORDER_THIN,
-                    'color'       => ['argb' => Color::COLOR_BLACK],
+    protected function getImportTemplate()
+    {
+        $this->ruleStyles = match ($this->templateDriver) {
+            /**
+             * 可设置内容参考文档与实现
+             * @see https://xlswriter-docs.viest.me/zh-cn/yang-shi-lie-biao
+             * @see https://github.com/viest/php-ext-xlswriter/blob/master/kernel/format.c
+             */
+            'vtiful'    => [
+                'Required' => [
+                    'background' => [\Vtiful\Kernel\Format::COLOR_RED, \Vtiful\Kernel\Format::PATTERN_SOLID],
+                    'fontColor'  => [\Vtiful\Kernel\Format::COLOR_WHITE],
+                    'border'     => [\Vtiful\Kernel\Format::BORDER_THIN],
                 ],
             ],
-        ],
-    ];
+            'phpoffice' => [
+                'Required' => [
+                    'fill'    => [
+                        'fillType'   => Fill::FILL_SOLID,
+                        'startColor' => ['argb' => Color::COLOR_RED],
+                    ],
+                    'font'    => [
+                        'color' => ['argb' => Color::COLOR_WHITE],
+                    ],
+                    'borders' => [
+                        'outline' => [
+                            'borderStyle' => Border::BORDER_THIN,
+                            'color'       => ['argb' => Color::COLOR_BLACK],
+                        ],
+                    ],
+                ],
+            ],
+        };
+
+        return match($this->templateDriver) {
+            'vtiful'    => new VtifulTemplate(new Excel(['path' => '/'])),
+            'phpoffice' => new PhpOfficeTemplate(new Spreadsheet()),
+        };
+    }
 
     /**
      * 获取校验规则对应的备注处理方法
