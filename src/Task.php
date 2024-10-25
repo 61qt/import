@@ -178,7 +178,7 @@ abstract class Task
      * @param array $input
      * @return self
      */
-    public function init(array $input = [])
+    public function init(array $input = []): self
     {
         return $this;
     }
