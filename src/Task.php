@@ -4,22 +4,18 @@ namespace QT\Import;
 
 use Iterator;
 use Throwable;
-use Vtiful\Kernel\Excel;
 use QT\Import\Traits\Events;
 use QT\Import\Contracts\Template;
 use QT\Import\Traits\CheckMaxRow;
 use QT\Import\Exceptions\RowError;
 use QT\Import\Traits\WithTemplate;
 use Illuminate\Container\Container;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use QT\Import\Readers\VtifulReader;
 use QT\Import\Traits\RowsValidator;
 use QT\Import\Traits\CheckAndFormat;
-use QT\Import\Templates\VtifulTemplate;
 use QT\Import\Contracts\WithBatchInserts;
 use QT\Import\Traits\CheckTableDuplicated;
 use QT\Import\Exceptions\ValidationException;
-use QT\Import\Templates\PhpOfficeTemplate;
 
 /**
  * Import Task
@@ -157,7 +153,7 @@ abstract class Task
         /** @var Task $task */
         $task     = Container::getInstance()->make(static::class);
         $fields   = $task->init($input)->getFields();
-        $template = $task->getImportTemplate($task->templateDriver);
+        $template = $task->getImportTemplate($input['driver'] ?? $task->templateDriver);
 
         $template->setImportSheet($task->sheetIndex);
         $template->setFirstColumn($fields, $task->rules, $task->remarks);

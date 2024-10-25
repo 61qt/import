@@ -3,6 +3,7 @@
 namespace QT\Import\Traits;
 
 use Vtiful\Kernel\Excel;
+use Vtiful\Kernel\Format;
 use QT\Import\Contracts\Template;
 use QT\Import\Templates\VtifulTemplate;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
@@ -92,9 +93,9 @@ trait WithTemplate
              */
             'vtiful'    => [
                 'Required' => [
-                    'background' => [\Vtiful\Kernel\Format::COLOR_RED, \Vtiful\Kernel\Format::PATTERN_SOLID],
-                    'fontColor'  => [\Vtiful\Kernel\Format::COLOR_WHITE],
-                    'border'     => [\Vtiful\Kernel\Format::BORDER_THIN],
+                    'background' => [Format::COLOR_RED, Format::PATTERN_SOLID],
+                    'fontColor'  => [Format::COLOR_WHITE],
+                    'border'     => [Format::BORDER_THIN],
                 ],
             ],
             'phpoffice' => [

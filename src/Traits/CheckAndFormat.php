@@ -90,7 +90,7 @@ trait CheckAndFormat
 
     /**
      * 初始化错误信息,不用每行都判断一次错误名
-     * 
+     *
      * @return void
      */
     protected function bootDictErrorMessages()
@@ -101,8 +101,8 @@ trait CheckAndFormat
             }
 
             $this->dictErrorMessages[$field] = sprintf(
-                "%s必须为: %s", 
-                $this->displayNames[$field] ?? $field, 
+                "%s必须为: %s",
+                $this->displayNames[$field] ?? $field,
                 join(', ', $dict->keys()),
             );
         }
@@ -176,7 +176,7 @@ trait CheckAndFormat
 
     /**
      * 格式化初始数据
-     * 
+     *
      * @param array $row
      * @return array
      */
@@ -228,7 +228,7 @@ trait CheckAndFormat
 
     /**
      * 校验数据是否正确
-     * 
+     *
      * @param array $row
      * @throws ValidationException
      * @return array

@@ -14,7 +14,7 @@ class Rows implements Iterator
 {
     /**
      * excel列号
-     * 
+     *
      * @var array
      */
     protected $columns;
