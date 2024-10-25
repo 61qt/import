@@ -13,10 +13,10 @@ interface Validatable
      * 批量校验
      *
      * @param array $rows
-     * @param array $customAttributes
+     * @param array $displayNames
      * @return bool
      */
-    public function validate(array $rows, array $customAttributes = []): bool;
+    public function validate(array $rows, array $displayNames = []): bool;
 
     /**
      * 获取错误行

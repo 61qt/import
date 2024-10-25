@@ -12,11 +12,25 @@ use Throwable;
 trait Events
 {
     /**
+     * 上次同步生成进度时间
+     *
+     * @var int
+     */
+    protected $reportAt;
+
+    /**
+     * 上报间隔时间
+     *
+     * @var int
+     */
+    protected $interval = 3;
+
+    /**
      * 导入开始前触发
      *
      * @param array $input
      */
-    public function beforeImport(array $input)
+    public function beforeImport()
     {
         // do something
     }
@@ -26,7 +40,7 @@ trait Events
      *
      * @param array $successful 导入成功行
      * @param array $fail 导入失败行
-     * @return void
+     * @return mixed
      */
     public function afterImport(array $successful, array $fail)
     {

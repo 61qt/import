@@ -2,12 +2,13 @@
 
 namespace QT\Import\Traits;
 
+use DateTime;
 use Illuminate\Container\Container;
 use QT\Import\Contracts\Dictionary;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Contracts\Validation\Factory;
 use QT\Import\Exceptions\ValidationException;
-use OpenSpout\Writer\Common\Helper\CellHelper;
+use Illuminate\Validation\ValidationRuleParser;
 
 /**
  * 给每一行进行校验并格式化为期望的数据
@@ -38,11 +39,19 @@ trait CheckAndFormat
     protected $messages = [];
 
     /**
-     * validate 自定义属性
+     * validate 错误字段展示名称
      *
      * @var array
      */
-    protected $customAttributes = [];
+    protected $displayNames = [];
+
+    /**
+     * 需要格式化日期的字段
+     * 如 'birthday' => 'Ymd'
+     *
+     * @var array
+     */
+    protected $fieldDateFormats = [];
 
     /**
      * 是否使用默认值填充
@@ -73,28 +82,59 @@ trait CheckAndFormat
     protected $dictErrorMessages = [];
 
     /**
+     * 导入可选列
+     *
+     * @var array
+     */
+    protected $optional = [];
+
+    /**
      * 初始化错误信息,不用每行都判断一次错误名
+     * 
+     * @return void
      */
     protected function bootDictErrorMessages()
     {
-        $fields = $this->getFields($this->input);
-
         foreach ($this->dictionaries as $field => $dict) {
             if (!empty($this->dictErrorMessages[$field])) {
                 continue;
             }
 
-            $keys = join(', ', $dict->keys());
-            // 优先使用自定义的字段名,其次才是导入模板中的字段名
-            if (isset($this->customAttributes[$field])) {
-                $column = $this->customAttributes[$field];
-            } elseif (isset($fields[$field])) {
-                $column = $fields[$field];
-            } else {
-                $column = $field;
+            $this->dictErrorMessages[$field] = sprintf(
+                "%s必须为: %s", 
+                $this->displayNames[$field] ?? $field, 
+                join(', ', $dict->keys()),
+            );
+        }
+    }
+
+    /**
+     * 加载需要格式化日期的字段规则
+     *
+     * @return void
+     */
+    protected function bootFieldDateFormats()
+    {
+        foreach ($this->rules as $field => $rules) {
+            if (empty($rules)) {
+                $rules = [];
             }
 
-            $this->dictErrorMessages[$field] = "\"{$column}\"必须为: {$keys}";
+            if (is_string($rules)) {
+                $rules = explode('|', $rules);
+            }
+
+            $rules = array_reduce($rules, function ($result, $rule) {
+                [$rule, $params] = ValidationRuleParser::parse($rule);
+
+                $result[$rule] = $params;
+
+                return $result;
+            }, []);
+
+            if (isset($rules['DateFormat']) && !isset($this->fieldDateFormats[$field])) {
+                $this->fieldDateFormats[$field] = $rules['DateFormat'][0];
+            }
         }
     }
 
@@ -135,6 +175,41 @@ trait CheckAndFormat
     }
 
     /**
+     * 格式化初始数据
+     * 
+     * @param array $row
+     * @return array
+     */
+    protected function formatRow(array $row): array
+    {
+        // 提前格式化datetime类型
+        foreach ($this->fieldDateFormats as $field => $format) {
+            if ($row[$field] instanceof DateTime) {
+                $row[$field] = $row[$field]->format($format);
+            }
+        }
+
+        $errors = [];
+        foreach ($this->optional as $field) {
+            if (!isset($row[$field]) || empty($this->dictionaries[$field])) {
+                continue;
+            }
+
+            $value = $this->formatDict($row[$field], $this->dictionaries[$field]);
+
+            if ($value !== false) {
+                $row[$field] = $value;
+            } else {
+                $errors[$field] = $this->dictErrorMessages[$field];
+            }
+        }
+
+        $this->throwNotEmpty($errors);
+
+        return $row;
+    }
+
+    /**
      * 把excel填写的内容转换成需要的内容
      *
      * @param string $key
@@ -152,87 +227,49 @@ trait CheckAndFormat
     }
 
     /**
-     * @param array $data
-     * @param int $line
+     * 校验数据是否正确
+     * 
+     * @param array $row
+     * @throws ValidationException
      * @return array
      */
-    protected function checkRow(array $data, int $line): array
+    protected function checkRow(array $row): array
     {
         // 验证参数格式
         $validator = $this->getValidationFactory()->make(
-            $data,
+            $row,
             $this->rules,
             $this->messages,
-            $this->getCustomAttributes()
+            $this->displayNames,
         );
 
-        $this->throwNotEmpty($validator->errors()->messages(), $line);
+        $this->throwNotEmpty($validator->errors()->messages());
 
-        return [$data, $line];
-    }
-
-    /**
-     * @param array $data
-     * @param int $line
-     * @return array
-     */
-    protected function formatRow(array $data, int $line): array
-    {
-        foreach ($data as $field => $value) {
-            // 过滤空值
-            if ($value !== '') {
-                continue;
-            }
-
-            if ($this->useDefault) {
-                // 批量插入时需要设置默认值
-                $data[$field] = $this->getDefaultValue($field);
-            } else {
-                // 更新信息时保留原记录
-                unset($data[$field]);
-            }
-        }
-
-        return [$data, $line];
+        return $row;
     }
 
     /**
      * 获取字段展示内容
      *
      * @param array $errors
-     * @param int $line
      * @throws ValidationException
      */
-    protected function throwNotEmpty(array $errors, int $line)
+    protected function throwNotEmpty(array $errors)
     {
         if (empty($errors)) {
             return;
         }
 
         $messages = [];
-        $fields   = array_keys($this->getFields($this->input));
-        foreach ($errors as $field => $message) {
-            if (is_array($message)) {
-                $message = join(',', $message);
+        foreach ($errors as $error) {
+            if (is_array($error)) {
+                $error = join(',', $error);
             }
 
-            $index = array_search($field, $fields);
-            $pos   = $this->getSheetPos($index, $line);
-
-            $messages[] = "原表{$pos} 错误: {$message}";
+            $messages[] = $error;
         }
 
         throw new ValidationException(join("\n", $messages));
-    }
-
-    /**
-     * 获取字段展示内容
-     *
-     * @return array
-     */
-    protected function getCustomAttributes(): array
-    {
-        return array_merge($this->getFields($this->input), $this->customAttributes);
     }
 
     /**
@@ -246,18 +283,6 @@ trait CheckAndFormat
         return array_key_exists($field, $this->default)
             ? $this->default[$field]
             : new Expression('default');
-    }
-
-    /**
-     * 获取excel中的坐标
-     *
-     * @param int $columnIndex
-     * @param int $line
-     * @return string
-     */
-    protected function getSheetPos(int $columnIndex, int $line): string
-    {
-        return CellHelper::getColumnLettersFromColumnIndex($columnIndex) . $line;
     }
 
     /**

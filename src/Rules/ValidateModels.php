@@ -72,7 +72,7 @@ abstract class ValidateModels implements Validatable
      *
      * @var array
      */
-    protected $customAttributes = [];
+    protected $displayNames = [];
 
     /**
      * 默认错误信息
@@ -132,12 +132,12 @@ abstract class ValidateModels implements Validatable
      * 批量校验
      *
      * @param array $rows
-     * @param array $customAttributes
+     * @param array $displayNames
      * @return bool
      */
-    public function validate(array $rows, array $customAttributes = []): bool
+    public function validate(array $rows, array $displayNames = []): bool
     {
-        $this->customAttributes = $customAttributes;
+        $this->displayNames = $displayNames;
 
         foreach ($this->attributes as $key => $fields) {
             list($query, $lines) = $this->buildSql(
@@ -310,7 +310,7 @@ abstract class ValidateModels implements Validatable
      */
     protected function getFieldDisplayName(string $field): string
     {
-        return $this->customAttributes[$field] ?? $field;
+        return $this->displayNames[$field] ?? $field;
     }
 
     /**

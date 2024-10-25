@@ -2,19 +2,20 @@
 
 namespace QT\Import;
 
-use DateTime;
+use Iterator;
 use Throwable;
 use QT\Import\Traits\Events;
 use QT\Import\Traits\CheckMaxRow;
 use QT\Import\Exceptions\RowError;
 use QT\Import\Traits\WithTemplate;
-use Illuminate\Database\Connection;
+use Illuminate\Container\Container;
+use QT\Import\Readers\VtifulReader;
 use QT\Import\Traits\RowsValidator;
 use QT\Import\Traits\CheckAndFormat;
-use Illuminate\Database\Eloquent\Model;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use QT\Import\Contracts\WithBatchInserts;
 use QT\Import\Traits\CheckTableDuplicated;
 use QT\Import\Exceptions\ValidationException;
-use Illuminate\Validation\ValidationRuleParser;
 
 /**
  * Import Task
@@ -49,14 +50,7 @@ abstract class Task
      *
      * @var string
      */
-    protected $memoryLimit = '128M';
-
-    /**
-     * 外部输入值
-     *
-     * @var array
-     */
-    protected $input = [];
+    protected $memoryLimit = '1280M';
 
     /**
      * 原始行数据
@@ -80,14 +74,6 @@ abstract class Task
     protected $errors = [];
 
     /**
-     * 需要格式化日期的字段
-     * 如 'birthday' => 'Ymd'
-     *
-     * @var array
-     */
-    protected $fieldDateFormats = [];
-
-    /**
      * 是否捕获行错误
      * 可以在同步导入时直接抛出错误不执行后续逻辑
      * 异步任务执行时请开启该标识,防止异常中断任务
@@ -97,110 +83,139 @@ abstract class Task
     protected $catch = true;
 
     /**
-     * 是否启用事务
+     * 读取的sheet位置
      *
-     * @var bool
+     * @var integer
      */
-    protected $useTransaction = true;
-
-    /**
-     * 上次同步生成进度时间
-     *
-     * @var int
-     */
-    protected $reportAt;
-
-    /**
-     * 上报间隔时间
-     *
-     * @var int
-     */
-    protected $interval = 3;
-
-    /**
-     * 字段校验模式(默认使用宽松模式)
-     *
-     * @var int
-     */
-    protected $matchColumnMode = MatchColumns::TOLERANT_MODE;
+    protected $sheetIndex = 0;
 
     /**
      * 获取导入字段
      *
+     * @return array
+     */
+    abstract public function getFields(): array;
+
+    /**
+     * 设置文件读取逻辑
+     *
+     * eq: new VtifulReader($filename, [
+     *     'sheet_index' => $this->sheetIndex,
+     * ])
+     *
+     * @param string $filename
+     * @return Iterator
+     */
+    abstract public function getFileReader(string $filename): Iterator;
+
+    /**
+     * 设置字段匹配逻辑
+     *
+     * eq:
+     * new MatchColumns($this->getFields(), [
+     *     'start_row' => 0,
+     *     'mode'      => MatchColumns::TOLERANT_MODE,
+     * ])
+     *
+     * @return callable
+     */
+    abstract public function getMatchColumnFn(): callable;
+
+    /**
+     * 读取导入文件
+     *
+     * @param string $filename
      * @param array $input
      * @return array
      */
-    abstract public function getFields(array $input = []): array;
-
-    /**
-     * 开始处理异步导入任务
-     *
-     * @param iterable $rows
-     * @param array $input
-     */
-    public function handle(iterable $rows, array $input = [])
+    public static function read(string $filename, array $input = [])
     {
-        ini_set('memory_limit', $this->memoryLimit);
+        /** @var Task $task */
+        $task   = Container::getInstance()->make(static::class);
+        $rows   = new Rows($task->getFileReader($filename), $task->getMatchColumnFn());
+        $result = $task->init($input)->handle($rows);
 
-        $this->input = $input;
-
-        if (!empty($this->model) && is_subclass_of($this->model, Model::class)) {
-            /** @var Connection $connection */
-            $connection = $this->model::query()->getConnection();
+        if ($task instanceof WithBatchInserts) {
+            call_user_func($task->transaction(), fn () => $task->insertDB($result));
         }
 
-        try {
-            // 任务开始前对option内容进行检查处理
-            $this->beforeImport($input);
-            // 初始化错误信息
-            $this->bootDictErrorMessages();
-            $this->bootCheckTableDuplicated();
-            $this->bootFieldDateFormats();
-            // 处理行内容
-            $this->processRows($rows);
-            // 数据校验完成后,清空冗余数据,释放内存
-            $this->originalRows = [];
-            // 插入到db
-            if (empty($connection) || !$this->useTransaction) {
-                $this->insertDB();
-            } else {
-                $connection->transaction(fn () => $this->insertDB());
-            }
-            // 触发任务完成事件
-            $this->afterImport($this->rows, $this->errors);
-        } catch (Throwable $e) {
-            $this->onFailed($e);
-        }
+        return $result;
     }
 
     /**
-     * 加载需要格式化日期的字段规则
+     * 获取可导入模板文件
      *
-     * @return void
+     * @param array $input
+     * @return Template
      */
-    protected function bootFieldDateFormats()
+    public static function template(array $input = []): Template
     {
-        foreach ($this->rules as $field => $rules) {
-            if (empty($rules)) {
-                $rules = [];
-            }
+        /** @var Task $task */
+        $task     = Container::getInstance()->make(static::class);
+        $fields   = $task->init($input)->getFields();
+        $template = new Template(new Spreadsheet());
 
-            if (is_string($rules)) {
-                $rules = explode('|', $rules);
-            }
+        $template->setImportSheet($task->sheetIndex);
+        $template->setFirstColumn($fields, $task->rules, $task->remarks);
+        $template->setColumnFormat($task->formatColumns);
+        $template->setDictionaries($task->getDictionaries());
+        $template->setOptionalColumns($task->optional);
 
-            $rules = array_reduce($rules, function ($result, $rule) {
-                [$rule, $params] = ValidationRuleParser::parse($rule);
-
-                $result[$rule] = $params;
-
-                return $result;
-            }, []);
-
-            if (isset($rules['DateFormat']) && !isset($this->fieldDateFormats[$field])) {
-                $this->fieldDateFormats[$field] = $rules['DateFormat'][0];
-            }
+        foreach ($task->ruleComments as $rule => $comment) {
+            $template->setRuleComment($rule, $task->getCommentCallback($comment));
         }
+
+        foreach ($task->ruleStyles as $rule => $style) {
+            $template->setRuleStyle($rule, $style);
+        }
+
+        return $template;
+    }
+
+    /**
+     * 初始化导入任务
+     *
+     * @param array $input
+     * @return self
+     */
+    public function init(array $input = [])
+    {
+        return $this;
+    }
+
+    /**
+     * 读取导入数据
+     *
+     * @param iterable $rows
+     * @return array
+     */
+    public function handle(iterable $rows): ?array
+    {
+        ini_set('memory_limit', $this->memoryLimit);
+
+        // 初始化错误字段展示名称
+        $this->displayNames = array_merge($this->getFields(), $this->displayNames);
+        // 初始化错误信息
+        $this->bootDictErrorMessages();
+        $this->bootCheckTableDuplicated();
+        $this->bootFieldDateFormats();
+
+        try {
+            // 导入任务初始化
+            $this->beforeImport();
+            // 处理行内容
+            $this->processRows($rows);
+            // 触发任务完成事件
+            $this->afterImport($this->rows, $this->errors);
+            // 如果不写入db,返回导入的数据
+            if (!$this instanceof WithBatchInserts) {
+                return $this->rows;
+            }
+        } catch (Throwable $e) {
+            $this->onFailed($e);
+        }
+
+        return null;
     }
 
     /**
@@ -219,13 +234,6 @@ abstract class Task
 
             // 根据具体有数据的行来判断
             $this->checkMaxRow($currentLine++);
-
-            // 提前格式化datetime类型
-            foreach ($this->fieldDateFormats as $field => $format) {
-                if ($row[$field] instanceof DateTime) {
-                    $row[$field] = $row[$field]->format($format);
-                }
-            }
 
             try {
                 $data = $this->checkAndFormatRow($row, $line);
@@ -263,33 +271,31 @@ abstract class Task
     /**
      * 检查并格式化一行数据
      *
-     * @param array $data
+     * @param array $row
      * @param int $line
      * @throws ValidationException
      * @return array
      */
-    protected function checkAndFormatRow(array $data, int $line): array
+    protected function checkAndFormatRow(array $row, int $line): array
     {
-        $errors = [];
-        foreach ($this->optional as $field) {
-            if (!isset($data[$field]) || empty($this->dictionaries[$field])) {
+        $row = $this->checkRow($this->formatRow($row));
+
+        foreach ($row as $field => $value) {
+            // 过滤空值
+            if ($value !== '') {
                 continue;
             }
 
-            $value = $this->formatDict($data[$field], $this->dictionaries[$field]);
-
-            if ($value !== false) {
-                $data[$field] = $value;
+            if ($this->useDefault) {
+                // 批量插入时需要设置默认值
+                $row[$field] = $this->getDefaultValue($field);
             } else {
-                $errors[$field] = $this->dictErrorMessages[$field];
+                // 更新信息时保留原记录
+                unset($row[$field]);
             }
         }
 
-        $this->throwNotEmpty($errors, $line);
-
-        [$result, $line] = $this->formatRow(...$this->checkRow($data, $line));
-
-        return $result;
+        return $row;
     }
 
     /**
@@ -311,14 +317,8 @@ abstract class Task
 
             unset($this->rows[$line]);
         }
-    }
 
-    /**
-     * 批量插入
-     *
-     * @return void
-     */
-    protected function insertDB()
-    {
+        // 数据校验完成后,清空冗余数据,释放内存
+        $this->originalRows = [];
     }
 }

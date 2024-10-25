@@ -44,10 +44,10 @@ class CustomRule implements Validatable
      * {@inheritDoc}
      *
      * @param array $rows
-     * @param array $customAttributes
+     * @param array $displayNames
      * @return boolean
      */
-    public function validate($rows, $customAttributes = []): bool
+    public function validate($rows, $displayNames = []): bool
     {
         foreach ($rows as $line => $row) {
             try {

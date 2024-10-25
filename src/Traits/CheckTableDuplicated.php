@@ -85,9 +85,8 @@ trait CheckTableDuplicated
                 continue;
             }
 
-            $attributes   = $this->getCustomAttributes();
             $conflictLine = $this->existingFieldValues[$key][$valueKey];
-            $errField     = join(', ', array_map(fn ($field) => $attributes[$field] ?? $field, $fields));
+            $errField     = join(', ', array_map(fn ($field) => $this->displayNames[$field] ?? $field, $fields));
 
             throw new ValidationException(sprintf(
                 '%s 错误: 原表第%s行 与 第%s行 重复,请确保数据表内的数据为唯一的',

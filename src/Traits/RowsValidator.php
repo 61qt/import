@@ -35,7 +35,7 @@ trait RowsValidator
                 continue;
             }
 
-            if ($rule->validate($rows, $this->getCustomAttributes())) {
+            if ($rule->validate($rows, $this->displayNames)) {
                 continue;
             }
 

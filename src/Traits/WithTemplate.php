@@ -2,12 +2,9 @@
 
 namespace QT\Import\Traits;
 
-use QT\Import\Template;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\Border;
-use QT\Import\Contracts\Template as ContractTemplate;
 use Illuminate\Validation\Concerns\ReplacesAttributes;
 
 /**
@@ -26,12 +23,6 @@ trait WithTemplate
      */
     protected $remarks = [];
 
-    /**
-     * 下拉可选列
-     *
-     * @var array
-     */
-    protected $optional = [];
     /**
      * 设置需要格式的列
      * 如：['column' => NumberFormat::FORMAT_GENERAL]
@@ -90,34 +81,6 @@ trait WithTemplate
     ];
 
     /**
-     * 获取可导入模板文件
-     *
-     * @param array $input
-     * @return Template
-     */
-    public function getImportTemplate(array $input = []): ContractTemplate
-    {
-        $fields   = $this->getFields($input);
-        $template = new Template(new Spreadsheet());
-
-        $template->setImportSheet(0);
-        $template->setFirstColumn($fields, $this->rules, $this->remarks);
-        $template->setColumnFormat($this->formatColumns);
-        $template->setDictionaries($this->getDictionaries());
-        $template->setOptionalColumns($this->getOptionalColumns($input));
-
-        foreach ($this->ruleComments as $rule => $comment) {
-            $template->setRuleComment($rule, $this->getCommentCallback($comment));
-        }
-
-        foreach ($this->ruleStyles as $rule => $style) {
-            $template->setRuleStyle($rule, $style);
-        }
-
-        return $template;
-    }
-
-    /**
      * 获取校验规则对应的备注处理方法
      *
      * @param mixed $comment
@@ -144,16 +107,5 @@ trait WithTemplate
 
             return str_replace(":{$rule}", $params[0] ?? '', $message);
         };
-    }
-
-    /**
-     * 获取可选列
-     *
-     * @param array $input
-     * @return array
-     */
-    public function getOptionalColumns(array $input = []): array
-    {
-        return $this->optional;
     }
 }
