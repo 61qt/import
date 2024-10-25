@@ -79,11 +79,12 @@ trait WithTemplate
     /**
      * 获取导出模板
      *
+     * @param string $driver
      * @return Template|VtifulTemplate|PhpOfficeTemplate
      */
-    protected function getImportTemplate()
+    protected function getImportTemplate(string $driver)
     {
-        $this->ruleStyles = match ($this->templateDriver) {
+        $this->ruleStyles = match ($driver) {
             /**
              * 可设置内容参考文档与实现
              * @see https://xlswriter-docs.viest.me/zh-cn/yang-shi-lie-biao
@@ -115,7 +116,7 @@ trait WithTemplate
             ],
         };
 
-        return match($this->templateDriver) {
+        return match ($driver) {
             'vtiful'    => new VtifulTemplate(new Excel(['path' => '/'])),
             'phpoffice' => new PhpOfficeTemplate(new Spreadsheet()),
         };
