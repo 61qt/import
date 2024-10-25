@@ -16,6 +16,16 @@ class UserImport extends Task implements WithBatchInserts
 {
     use InsertDB;
 
+    protected $fields = [
+        'username'  => '账户名称',
+        'user_type' => '用户类型',
+        'password'  => '登陆密码',
+        'name'      => '姓名',
+        'phone'     => '手机号',
+        'birthday'  => '生日',
+        'email'     => '邮箱地址',
+    ];
+
     protected $rules = [
         'username'  => 'required|string|min:6|max:12',
         'user_type' => 'required',
@@ -38,7 +48,7 @@ class UserImport extends Task implements WithBatchInserts
         'username.required' => '账户名称必填',
     ];
 
-    public function init(array $input = [])
+    public function init(array $input = []): Task
     {
         $this->setDictionary('user_type', new Dictionary([
             '超级用户' => 1,
@@ -53,15 +63,7 @@ class UserImport extends Task implements WithBatchInserts
 
     public function getFields(array $input = []): array
     {
-        return [
-            'username'  => '账户名称',
-            'user_type' => '用户类型',
-            'password'  => '登陆密码',
-            'name'      => '姓名',
-            'phone'     => '手机号',
-            'birthday'  => '生日',
-            'email'     => '邮箱地址',
-        ];
+        return $this->fields;
     }
 
     public function getFileReader(string $filename): Iterator
@@ -95,7 +97,7 @@ class UserImport extends Task implements WithBatchInserts
 
     public function insertDB()
     {
-        var_dump($this->rows);
+        // var_dump($this->rows);
     }
 }
 
@@ -103,6 +105,20 @@ $path = __DIR__ . '/user.xlsx';
 
 // 生成导入模板
 $template = UserImport::template();
+
+// 设置示例
+$template->setExample([
+    [
+        'username'  => '次数填写用户米',
+        'user_type' => '选择用户类型',
+        'password'  => '登陆密码',
+        'name'      => '用户昵称',
+        'phone'     => '手机号码',
+        'birthday'  => '生日日期',
+        'email'     => '邮箱',
+    ],
+]);
+
 $template->fillSimpleData([
     // 正确数据
     [
