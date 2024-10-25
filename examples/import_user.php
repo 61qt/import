@@ -1,17 +1,21 @@
 <?php
 
 use QT\Import\Task;
-use QT\Import\Rows;
 use QT\Import\Dictionary;
-use QT\Import\Contracts\Template;
+use QT\Import\MatchColumns;
+use QT\Import\Traits\InsertDB;
 use Illuminate\Validation\Factory;
+use QT\Import\Readers\VtifulReader;
 use Illuminate\Translation\Translator;
 use Illuminate\Translation\ArrayLoader;
+use QT\Import\Contracts\WithBatchInserts;
 
 include "bootstrap.php";
 
-class UserImport extends Task
+class UserImport extends Task implements WithBatchInserts
 {
+    use InsertDB;
+
     protected $rules = [
         'username'  => 'required|string|min:6|max:12',
         'user_type' => 'required',
@@ -34,6 +38,19 @@ class UserImport extends Task
         'username.required' => '账户名称必填',
     ];
 
+    public function init(array $input = [])
+    {
+        $this->setDictionary('user_type', new Dictionary([
+            '超级用户' => 1,
+            '特殊用户' => 2,
+            '普通用户' => 3,
+        ]));
+
+        $this->setValidationFactory(new Factory(new Translator(new ArrayLoader(), 'cn')));
+
+        return $this;
+    }
+
     public function getFields(array $input = []): array
     {
         return [
@@ -47,34 +64,23 @@ class UserImport extends Task
         ];
     }
 
-    public function getImportTemplate(array $input = []): Template
+    public function getFileReader(string $filename): Iterator
     {
-        $template = parent::getImportTemplate($input);
-
-        $template->setRuleComment('DateFormat', function ($rule, $params) {
-            return str_replace(
-                [':format', ':example'],
-                [$params[0], date($params[0], time())],
-                '格式为:format,示例::example'
-            );
-        });
-
-        return $template;
+        return new VtifulReader($filename);
     }
 
-    protected function insertDB()
+    public function getMatchColumnFn(): callable
     {
-        // do something
-    }
-
-    public function beforeImport(array $input)
-    {
-        // 检查输入数据是否正确
+        return new MatchColumns($this->getFields(), [
+            'mode' => MatchColumns::TOLERANT_MODE,
+        ]);
     }
 
     public function afterImport(array $successful, array $fail)
     {
-        // var_dump($successful, $fail);
+        foreach ($fail as $row) {
+            var_dump($row->getPrevious()->__toString());
+        }
     }
 
     public function onReport(int $count)
@@ -86,22 +92,17 @@ class UserImport extends Task
     {
         // 处理错误
     }
+
+    public function insertDB()
+    {
+        var_dump($this->rows);
+    }
 }
 
 $path = __DIR__ . '/user.xlsx';
-// 初始化导入任务
-$task = new UserImport();
-// 设置校验器（如果Ioc容器内有,会自动从容器中获取）
-$task->setValidationFactory(new Factory(new Translator(new ArrayLoader(), 'cn')));
-// 设置字典
-$task->setDictionary('user_type', new Dictionary([
-    '超级用户' => 1,
-    '特殊用户' => 2,
-    '普通用户' => 3,
-]));
 
 // 生成导入模板
-$template = $task->getImportTemplate();
+$template = UserImport::template();
 $template->fillSimpleData([
     // 正确数据
     [
@@ -127,4 +128,4 @@ $template->fillSimpleData([
 
 $template->save($path);
 
-$task->handle(Rows::createFrom($path, $task));
+UserImport::read($path);
