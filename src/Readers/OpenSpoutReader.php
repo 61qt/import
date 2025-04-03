@@ -15,14 +15,10 @@ use OpenSpout\Reader\XLSX\Options as XLSXOptions;
  */
 class OpenSpoutReader implements Iterator
 {
-    /**
-     * @var SheetInterface $sheet
-     */
+    /** @var SheetInterface */
     protected $sheet;
 
-    /**
-     * @var RowIteratorInterface
-     */
+    /** @var RowIteratorInterface */
     protected $rows;
 
     /**
@@ -31,7 +27,7 @@ class OpenSpoutReader implements Iterator
      * @param string $filename
      * @param array $options
      */
-    public function __construct(protected string $filename, protected array $options)
+    public function __construct(protected string $filename, protected array $options = [])
     {
         $readerOptions = new XLSXOptions();
         if (isset($options['read'])) {

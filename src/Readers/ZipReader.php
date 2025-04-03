@@ -159,6 +159,7 @@ class ZipReader implements Iterator
         $zip->open($openPath, ZipArchive::CREATE);
 
         $isUtf8 = true;
+
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $oldName  = $zip->getNameIndex($i, ZipArchive::FL_ENC_RAW);
             $encoding = mb_detect_encoding($oldName, ['UTF-8', 'GB2312', 'GBK']);

@@ -2,7 +2,7 @@
 
 namespace QT\Import\Traits;
 
-use DateTime;
+use DateTimeInterface;
 use Illuminate\Container\Container;
 use QT\Import\Contracts\Dictionary;
 use Illuminate\Database\Query\Expression;
@@ -101,7 +101,7 @@ trait CheckAndFormat
             }
 
             $this->dictErrorMessages[$field] = sprintf(
-                "%s必须为: %s",
+                '%s必须为: %s',
                 $this->displayNames[$field] ?? $field,
                 join(', ', $dict->keys()),
             );
@@ -184,8 +184,11 @@ trait CheckAndFormat
     {
         // 提前格式化datetime类型
         foreach ($this->fieldDateFormats as $field => $format) {
-            if ($row[$field] instanceof DateTime) {
+            if ($row[$field] instanceof DateTimeInterface) {
                 $row[$field] = $row[$field]->format($format);
+            } elseif (is_int($row[$field])) {
+                // 兼容vtiful读取的int类型
+                $row[$field] = date($format, $row[$field]);
             }
         }
 
@@ -276,7 +279,7 @@ trait CheckAndFormat
      * 获取字段默认值
      *
      * @param string $field
-     * @return mixed|\Illuminate\Database\Query\Expression
+     * @return mixed|Expression
      */
     protected function getDefaultValue(string $field)
     {
