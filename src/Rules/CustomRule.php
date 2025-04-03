@@ -32,6 +32,8 @@ class CustomRule implements Validatable
 
     /**
      * Undocumented function
+     *
+     * @param mixed $fn
      */
     public function __construct(protected $fn)
     {
@@ -45,7 +47,7 @@ class CustomRule implements Validatable
      *
      * @param array $rows
      * @param array $displayNames
-     * @return boolean
+     * @return bool
      */
     public function validate($rows, $displayNames = []): bool
     {

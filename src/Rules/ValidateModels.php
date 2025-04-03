@@ -15,14 +15,10 @@ use Illuminate\Database\Query\Builder as BaseBuilder;
  */
 abstract class ValidateModels implements Validatable
 {
-    /**
-     * @var \Illuminate\Database\Eloquent\Builder
-     */
+    /** @var Builder */
     protected $query;
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $attributes = [];
 
     /**
@@ -99,7 +95,7 @@ abstract class ValidateModels implements Validatable
      * @param array $messages
      */
     public function __construct(
-        Builder | BaseBuilder $query,
+        Builder|BaseBuilder $query,
         array $attributes,
         array $wheres = [],
         array $ignoreFields = [],
@@ -183,7 +179,7 @@ abstract class ValidateModels implements Validatable
      * @param array $fields
      * @return array
      */
-    protected function buildSql(Builder | BaseBuilder $query, array $rows, array $fields): array
+    protected function buildSql(Builder|BaseBuilder $query, array $rows, array $fields): array
     {
         $lines   = [];
         $aliases = array_keys($fields);
@@ -239,7 +235,7 @@ abstract class ValidateModels implements Validatable
      *
      * @param Builder|BaseBuilder $query
      */
-    protected function buildDefaultConditions(Builder | BaseBuilder $query)
+    protected function buildDefaultConditions(Builder|BaseBuilder $query)
     {
         foreach ($this->wheres as $key => $value) {
             if (is_numeric($key) && is_array($value)) {
@@ -262,7 +258,7 @@ abstract class ValidateModels implements Validatable
      * @param array $fields
      * @param array $row
      */
-    protected function buildConditions(Builder | BaseBuilder $query, array $fields, array $row)
+    protected function buildConditions(Builder|BaseBuilder $query, array $fields, array $row)
     {
         foreach ($fields as $alias => $field) {
             $query->where($field, $row[$alias]);
@@ -275,7 +271,7 @@ abstract class ValidateModels implements Validatable
      * @param Builder|BaseBuilder $query
      * @param array $row
      */
-    protected function buildIgnoreConditions(Builder | BaseBuilder $query, array $row)
+    protected function buildIgnoreConditions(Builder|BaseBuilder $query, array $row)
     {
         foreach ($this->ignoreFields as $field) {
             $query->where($field, '!=', $row[$field]);

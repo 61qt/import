@@ -56,7 +56,7 @@ class UniqueIgnoreFieldNull extends Unique
      * @param array $messages
      */
     public function __construct(
-        Builder | BaseBuilder $query,
+        Builder|BaseBuilder $query,
         array $attributes,
         array $wheres = [],
         array $ignoreFieldsNull = [],
@@ -81,7 +81,7 @@ class UniqueIgnoreFieldNull extends Unique
      * @param Builder|BaseBuilder $query
      * @param array $row
      */
-    protected function buildIgnoreConditions(Builder | BaseBuilder $query, array $row)
+    protected function buildIgnoreConditions(Builder|BaseBuilder $query, array $row)
     {
         foreach ($this->ignoreFieldsNull as $field => $bool) {
             $query->where(function ($query) use ($row, $field, $bool) {

@@ -112,7 +112,7 @@ class PhpOfficeTemplate implements ContractTemplate
     /**
      * 起始行号,仅在设置了导入模板后生效,跳过模板原内容
      *
-     * @var integer
+     * @var int
      */
     protected $startRow = 0;
 
@@ -454,7 +454,7 @@ class PhpOfficeTemplate implements ContractTemplate
      * 在excel第二个sheet中生成字典
      *
      * @param array $columns
-     * @param integer $maxLine
+     * @param int $maxLine
      * @param string|null $title
      * @return void
      */
@@ -529,7 +529,7 @@ class PhpOfficeTemplate implements ContractTemplate
      *
      * @param string $title
      * @param string $column
-     * @param integer $endLine
+     * @param int $endLine
      * @return string
      */
     protected function getFormula(string $title, string $column, int $endLine): string

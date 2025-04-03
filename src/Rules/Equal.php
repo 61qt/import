@@ -67,7 +67,7 @@ class Equal extends ValidateModels
      * @param array $messages
      */
     public function __construct(
-        Builder | BaseBuilder $query,
+        Builder|BaseBuilder $query,
         array $attributes,
         array $wheres = [],
         array $equalFields = [],

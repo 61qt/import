@@ -107,7 +107,7 @@ class VtifulTemplate implements ContractTemplate
     /**
      * 起始行号,仅在设置了导入模板后生效,跳过模板原内容
      *
-     * @var integer
+     * @var int
      */
     protected $startRow = 0;
 
@@ -462,7 +462,7 @@ class VtifulTemplate implements ContractTemplate
      * 在excel第二个sheet中生成字典
      *
      * @param array $columns
-     * @param integer $maxLine
+     * @param int $maxLine
      * @param string $title
      * @return void
      */
@@ -526,7 +526,7 @@ class VtifulTemplate implements ContractTemplate
      *
      * @param string $title
      * @param string $column
-     * @param integer $endLine
+     * @param int $endLine
      * @return string
      */
     protected function getFormula(string $title, string $column, int $endLine): string
@@ -541,7 +541,7 @@ class VtifulTemplate implements ContractTemplate
     /**
      * 对数字做26进制转换
      *
-     * @param integer $index
+     * @param int $index
      * @return string
      */
     protected function stringFromColumnIndex(int $index): string
@@ -576,7 +576,6 @@ class VtifulTemplate implements ContractTemplate
      *
      * @param int $sheetIndex
      * @param iterable $source
-     * @param int $startColumn
      * @param int $startRow
      */
     protected function writeRows(int $sheetIndex, iterable $source, int $startRow = 0)

@@ -87,7 +87,7 @@ class ExistsAndUnique extends ValidateModels
      * @param string $notUniqueMessage
      */
     public function __construct(
-        Builder | BaseBuilder $query,
+        Builder|BaseBuilder $query,
         array $attributes,
         array $nullable = [],
         array $wheres = [],
@@ -118,7 +118,7 @@ class ExistsAndUnique extends ValidateModels
      * @param array $row
      * @return void
      */
-    protected function buildConditions(Builder | BaseBuilder $query, array $fields, array $row)
+    protected function buildConditions(Builder|BaseBuilder $query, array $fields, array $row)
     {
         foreach ($fields as $alias => $field) {
             $query->where($field, $row[$alias]);

@@ -85,7 +85,7 @@ abstract class Task
     /**
      * 读取的sheet位置
      *
-     * @var integer
+     * @var int
      */
     protected $sheetIndex = 0;
 

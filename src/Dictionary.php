@@ -24,7 +24,7 @@ class Dictionary implements ContractDictionary
      * @param string|int $key
      * @return bool
      */
-    public function has(string | int $key): bool
+    public function has(string|int $key): bool
     {
         return isset($this->maps[$key]);
     }
@@ -35,7 +35,7 @@ class Dictionary implements ContractDictionary
      * @param string|int $key
      * @return string|int|null
      */
-    public function get(string | int $key): string | int | null
+    public function get(string|int $key): string|int|null
     {
         return $this->has($key) ? $this->maps[$key] : null;
     }

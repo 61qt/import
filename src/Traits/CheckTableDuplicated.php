@@ -22,9 +22,7 @@ trait CheckTableDuplicated
      */
     private $existingFieldValues = [];
 
-    /**
-     * @var array
-     */
+    /** @var array */
     private $uniqueKeys = [];
 
     /**
@@ -60,7 +58,7 @@ trait CheckTableDuplicated
      * 检查excel内是否重复
      *
      * @param array $data
-     * @param integer $line
+     * @param int $line
      * @throws ValidationException
      * @return void
      */
@@ -102,7 +100,7 @@ trait CheckTableDuplicated
      *
      * @param array $data
      * @param array $fields
-     * @return array|boolean
+     * @return array|bool
      */
     protected function getAndCheckValues(array $data, array $fields): array|bool
     {

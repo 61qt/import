@@ -88,6 +88,7 @@ trait WithTemplate
         $this->ruleStyles = match ($driver) {
             /**
              * 可设置内容参考文档与实现
+             *
              * @see https://xlswriter-docs.viest.me/zh-cn/yang-shi-lie-biao
              * @see https://github.com/viest/php-ext-xlswriter/blob/master/kernel/format.c
              */
