@@ -9,7 +9,6 @@ use QT\Import\Contracts\Dictionary;
 use Illuminate\Database\Query\Builder;
 use QT\Import\Exceptions\TemplateException;
 use Illuminate\Validation\ValidationRuleParser;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use QT\Import\Contracts\Template as ContractTemplate;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
@@ -339,31 +338,34 @@ class VtifulTemplate implements ContractTemplate
                 }
             }
 
-            $handle = null;
+            $formatHandle = new Format($this->excel->getHandle());
             // 获取单元格样式
             foreach ($this->ruleStyles as $rule => $options) {
                 if (!array_key_exists($rule, $rules)) {
                     continue;
                 }
 
-                $style = new Format($this->excel->getHandle());
                 foreach ($options as $method => $option) {
-                    $style->{$method}(...$option);
+                    $formatHandle->{$method}(...$option);
                 }
-
-                $handle = $style->toResource();
             }
 
-            // 获取内容格式
-            $format = $this->formatColumns[$column] ?? NumberFormat::FORMAT_TEXT;
+            $handle = $formatHandle->toResource();
+            $this->excel->insertText($currentLine, $currentColumn, $displayName, null, $handle);
 
-            $this->excel->insertText($currentLine, $currentColumn, $displayName, $format, $handle);
+            // 获取内容格式,设置整列的格式
+            $format = $this->formatColumns[$column] ?? '@';
+
+            $formatHandle = new Format($this->excel->getHandle());
+            $numberStyle  = $formatHandle->number($format)->toResource();
+            $columnStr    = $this->stringFromColumnIndex($currentColumn + 1);
+
+            $this->excel->setColumn("{$columnStr}:{$columnStr}", 15, $numberStyle);
 
             // 填写字段备注信息
             if (isset($this->remarks[$column])) {
                 $this->excel->insertComment($currentLine, $currentColumn, $this->remarks[$column]);
             }
-
             $currentColumn++;
         }
     }
@@ -416,10 +418,10 @@ class VtifulTemplate implements ContractTemplate
 
         $this->excel->checkoutSheet($this->importSheetTitle);
 
-        $index     = 0;
-        $maxLine   = 0;
-        $dictIndex = 0;
-        $columns   = [];
+        $index       = 0;
+        $maxLine     = 0;
+        $dictIndex   = 0;
+        $columnDicts = [];
         foreach ($this->columns as $column => $_) {
             $index++;
 
@@ -427,10 +429,10 @@ class VtifulTemplate implements ContractTemplate
                 continue;
             }
 
-            $line             = 0;
-            $columns[$column] = [];
+            $line                 = 0;
+            $columnDicts[$column] = [];
             foreach ($this->dictionaries[$column]->all() as $key => $value) {
-                $columns[$column][$line++] = $key;
+                $columnDicts[$column][$line++] = $key;
             }
 
             $dictIndex++;
@@ -445,15 +447,15 @@ class VtifulTemplate implements ContractTemplate
                 ->valueFormula($this->getFormula(
                     $this->dictSheetTitle,
                     $this->stringFromColumnIndex($dictIndex),
-                    count($columns[$column]) + 1,
+                    count($columnDicts[$column]) + 1,
                 ));
 
-            $column = $this->stringFromColumnIndex($index);
+            $columnStr = $this->stringFromColumnIndex($index);
             // 给1~200000行设置下拉选项
-            $this->excel->validation("{$column}2:{$column}200000", $validation->toResource());
+            $this->excel->validation("{$columnStr}2:{$columnStr}200000", $validation->toResource());
         }
 
-        $this->generateDictSheet($columns, $maxLine, $this->dictSheetTitle);
+        $this->generateDictSheet($columnDicts, $maxLine, $this->dictSheetTitle);
 
         return $this;
     }
